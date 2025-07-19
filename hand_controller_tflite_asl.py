@@ -24,14 +24,6 @@ limitations under the License.
 #      tflite_runtime
 #   PyTorch
 #      torch
-#   Vitis-AI 3.5
-#      xir
-#      vitis_ai_library
-#   Hailo
-#      hailo_platform
-#   plots
-#      pyplotly
-#      kaleido
 #
 
 
@@ -183,6 +175,8 @@ print("\tPress 'c' to continue ...")
 print("\tPress 's' to step one frame at a time ...")
 print("\tPress 'w' to take a photo ...")
 print("----------------------------------------------------------------")
+print("\tPress 'd' to toggle detection overlay on/off")
+print("\tPress 'l' to toggle landmarks overlay on/off")
 print("\tPress 'e' to toggle scores image on/off")
 print("\tPress 'f' to toggle FPS display on/off")
 print("\tPress 'v' to toggle verbose on/off")
@@ -194,6 +188,8 @@ print("================================================================")
 bStep = False
 bPause = False
 bWrite = False
+bShowDetection = False
+bShowLandmarks = True
 bShowScores = False
 bShowFPS = args.fps
 bVerbose = args.debug
@@ -287,11 +283,13 @@ while True:
 
         for i in range(len(flags)):
             landmark, flag = landmarks[i], flags[i]
-            if True: #flag>.5:
+            
+            if False: #if bShowLandmarks == True:
                 draw_landmarks(output, landmark[:,:2], HAND_CONNECTIONS, size=2)
                    
-            draw_roi(output,roi_box)
-            draw_detections(output,detections)
+            if bShowDetection == True:
+                draw_roi(output,roi_box)
+                draw_detections(output,detections)
             profile_annotate = timer()-start
 
             for i in range(len(flags)):
@@ -359,7 +357,8 @@ while True:
                 #print("    points_norm=",points_norm)
                                             
                 # Draw hand landmarks of each hand.
-                draw_landmarks(output, landmark[:,:2], HAND_CONNECTIONS, color=hand_color, size=3)
+                if bShowLandmarks == True:                
+                    draw_landmarks(output, landmark[:,:2], HAND_CONNECTIONS, color=hand_color, size=3)
                         
                 pointst = torch.tensor([points_norm]).float().to(device)
                 label = model(pointst)
@@ -406,6 +405,14 @@ while True:
         bStep = False
         bPause = False
         
+    if key == 100: # 'd'
+        bShowDetection = not bShowDetection
+        print("[INFO] Show Detection = ",bShowDetection)
+
+    if key == 108: # 'l'
+        bShowLandmarks = not bShowLandmarks
+        print("[INFO] Show Landmarks = ",bShowLandmarks)             
+                
     if key == 101: # 'e'
         bShowScores = not bShowScores
         blaze_detector.display_scores(debug=bShowScores)

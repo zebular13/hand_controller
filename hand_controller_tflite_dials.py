@@ -11,7 +11,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 #
-# Hand Controller with ASL
+# Hand Controller with Visual Control Dials
+#
+# Based on:
+#   https://github.com/ljkeller/visual_control/blob/master/proto.py
 #
 # References:
 #   https://www.github.com/AlbertaBeef/blaze_app_python
@@ -22,8 +25,6 @@ limitations under the License.
 #      tensorflow
 #    or
 #      tflite_runtime
-#   PyTorch
-#      torch
 #
 
 
@@ -33,6 +34,7 @@ import os
 from datetime import datetime
 import itertools
 
+from dataclasses import dataclass
 from ctypes import *
 from typing import List
 import pathlib
@@ -62,35 +64,16 @@ sys.path.append(os.path.abspath('blaze_app_python/blaze_pytorch/'))
 sys.path.append(os.path.abspath('blaze_app_python/blaze_vitisai/'))
 sys.path.append(os.path.abspath('blaze_app_python/blaze_hailo/'))
 
-#from blaze_tflite.blazedetector import BlazeDetector as BlazeDetector_tflite
-#from blaze_tflite.blazelandmark import BlazeLandmark as BlazeLandmark_tflite
-from blaze_pytorch.blazedetector import BlazeDetector as BlazeDetector_pytorch
-from blaze_pytorch.blazelandmark import BlazeLandmark as BlazeLandmark_pytorch
+from blaze_tflite.blazedetector import BlazeDetector as BlazeDetector_tflite
+from blaze_tflite.blazelandmark import BlazeLandmark as BlazeLandmark_tflite
 
 from visualization import draw_detections, draw_landmarks, draw_roi
 from visualization import HAND_CONNECTIONS, FACE_CONNECTIONS, POSE_FULL_BODY_CONNECTIONS, POSE_UPPER_BODY_CONNECTIONS
 
 from timeit import default_timer as timer
 
-import torch
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-sys.path.append('./asl_pointnet')
-from point_net import PointNet
-
-model_path = './asl_pointnet'
-model_name = 'point_net_1.pth'
-model = torch.load(os.path.join(model_path, model_name),weights_only=False,map_location=device)            
-
-char2int = {
-            "A":0, "B":1, "C":2, "D":3, "E":4, "F":5, "G":6, "H":7, "I":8, "K":9, "L":10, "M":11,
-            "N":12, "O":13, "P":14, "Q":15, "R":16, "S":17, "T":18, "U":19, "V":20, "W":21, "X":22, "Y":23
-            }
-
 bMirrorImage = True
-bNormalizedLandmarks = True
 print("[INFO] Mirror Image = ",bMirrorImage)
-print("[INFO] Normalized Landmarks = ",bNormalizedLandmarks)
 
 def get_media_dev_by_name(src):
     devices = glob.glob("/dev/media*")
@@ -142,10 +125,13 @@ if dev_video == None:
 else:
     input_video = dev_video  
 
+CAMERA_WIDTH = 640
+CAMERA_HEIGHT = 480
+
 # Open video
 cap = cv2.VideoCapture(input_video)
-frame_width = 640
-frame_height = 480
+frame_width = CAMERA_WIDTH
+frame_height = CAMERA_HEIGHT
 cap.set(cv2.CAP_PROP_FRAME_WIDTH,frame_width)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT,frame_height)
 #frame_width = int(round(cap.get(cv2.CAP_PROP_FRAME_WIDTH)))
@@ -155,24 +141,110 @@ print("[INFO] input : camera",input_video," (",frame_width,",",frame_height,")")
 detector_type = "blazepalm"
 landmark_type = "blazehandlandmark"
 
-#model1 = "blaze_app_python/blaze_tflite/models/palm_detection_lite.tflite"
-#blaze_detector = BlazeDetector_tflite(detector_type)
-model1 = "blaze_app_python/blaze_pytorch/models/blazepalm.pth"
-blaze_detector = BlazeDetector_pytorch(detector_type)
+model1 = "blaze_app_python/blaze_tflite/models/palm_detection_lite.tflite"
+blaze_detector = BlazeDetector_tflite(detector_type)
 blaze_detector.set_debug(debug=args.debug)
 blaze_detector.display_scores(debug=False)
 blaze_detector.load_model(model1)
  
-#model2 = "blaze_app_python/blaze_tflite/models/hand_landmark_lite.tflite"
-#blaze_landmark = BlazeLandmark_tflite(landmark_type)
-model2 = "blaze_app_python/blaze_pytorch/models/blazehand_landmark.pth"
-blaze_landmark = BlazeLandmark_pytorch(landmark_type)
+model2 = "blaze_app_python/blaze_tflite/models/hand_landmark_lite.tflite"
+blaze_landmark = BlazeLandmark_tflite(landmark_type)
 blaze_landmark.set_debug(debug=args.debug)
 blaze_landmark.load_model(model2)
+
+# Visual Control Dials
+CV_DRAW_COLOR_PRIMARY = (255, 255, 0)
+
+CONTROL_CIRCLE_DEADZONE_R = 50
+
+CONTROL_CIRCLE_XY_CENTER = (int(CAMERA_WIDTH/4), int(CAMERA_HEIGHT/2))
+CONTROL_CIRCLE_Z_APERATURE_CENTER = (
+    int(3*CAMERA_WIDTH/4), int(CAMERA_HEIGHT/2))
+
+
+@dataclass
+class HandData:
+    handedness: str
+    landmarks: list
+    center_perc: tuple
+
+    def __init__(self, handedness, landmarks):
+        self.handedness = handedness
+        #self.landmarks = landmarks
+        #x_avg = sum(lm.x for lm in landmarks) / len(landmarks)
+        #y_avg = sum(lm.y for lm in landmarks) / len(landmarks)
+        #z_avg = sum(lm.z for lm in landmarks) / len(landmarks)
+        self.landmarks = landmarks.copy()
+        self.landmarks[:,0] = self.landmarks[:,0] / CAMERA_WIDTH
+        self.landmarks[:,1] = self.landmarks[:,1] / CAMERA_HEIGHT        
+        landmarks_len = landmarks.shape[0]
+        x_avg = sum(self.landmarks[:,0]) / landmarks_len
+        y_avg = sum(self.landmarks[:,1]) / landmarks_len
+        z_avg = sum(self.landmarks[:,2]) / landmarks_len
+        
+        self.center_perc = (x_avg, y_avg, z_avg)
+        #print(f"center_perc: {self.center_perc}")
+
+def lerp(a, b, t):
+    return a(b-a)*t
+
+
+def draw_control_overlay(img, lh_data=None, rh_data=None):
+    # Draw control circle for XY control (left hand)
+    cv2.circle(img, CONTROL_CIRCLE_XY_CENTER,
+               CONTROL_CIRCLE_DEADZONE_R, CV_DRAW_COLOR_PRIMARY, 2)
+
+    if lh_data:
+        # Normalize and compute actual pixel position of left hand
+        xy_ctl_x_pct_normalized = min((lh_data.center_perc[0] - 0.25) * 4, 1.0)
+        xy_ctl_y_pct_normalized = min((lh_data.center_perc[1] - 0.5) * 2, 1.0)
+
+        xy_ctl_x = int(xy_ctl_x_pct_normalized *
+                       CONTROL_CIRCLE_DEADZONE_R) + CONTROL_CIRCLE_XY_CENTER[0]
+        xy_ctl_y = int(xy_ctl_y_pct_normalized *
+                       CONTROL_CIRCLE_DEADZONE_R) + CONTROL_CIRCLE_XY_CENTER[1]
+
+        hand_xy_point = (xy_ctl_x, xy_ctl_y)
+        center_xy_point = CONTROL_CIRCLE_XY_CENTER
+
+        # Draw line from center to hand position
+        cv2.line(img, center_xy_point, hand_xy_point,
+                 CV_DRAW_COLOR_PRIMARY, 1)
+
+        # Draw hand position dot
+        cv2.circle(img, hand_xy_point, 4, CV_DRAW_COLOR_PRIMARY, cv2.FILLED)
+
+    # Draw control circle for Z-aperture (right hand)
+    cv2.circle(img, CONTROL_CIRCLE_Z_APERATURE_CENTER,
+               CONTROL_CIRCLE_DEADZONE_R, CV_DRAW_COLOR_PRIMARY, 2)
+
+    if rh_data:
+        z_ctl_pct_normalized = min((rh_data.center_perc[1] - 0.50) * 2, 1.0)
+        aperature_ctl_x_pct_normalized = min(
+            (rh_data.center_perc[0] - 0.75) * 4, 1.0)
+
+        aperature_ctl_x = int(aperature_ctl_x_pct_normalized *
+                              CONTROL_CIRCLE_DEADZONE_R) + CONTROL_CIRCLE_Z_APERATURE_CENTER[0]
+        z_ctl_y = int(z_ctl_pct_normalized *
+                      CONTROL_CIRCLE_DEADZONE_R) + CONTROL_CIRCLE_Z_APERATURE_CENTER[1]
+
+        hand_z_point = (aperature_ctl_x, z_ctl_y)
+        center_z_point = CONTROL_CIRCLE_Z_APERATURE_CENTER
+
+        # Draw line from center to hand Z-position
+        cv2.line(img, center_z_point, hand_z_point,
+                 CV_DRAW_COLOR_PRIMARY, 1)
+
+        # Draw hand position dot
+        cv2.circle(img, hand_z_point, 4, CV_DRAW_COLOR_PRIMARY, cv2.FILLED)
+
+    # Optional: draw vertical center reference line
+    cv2.line(img, (int(CAMERA_WIDTH / 2), 0),
+             (int(CAMERA_WIDTH / 2), CAMERA_HEIGHT), CV_DRAW_COLOR_PRIMARY, 1)
        
         
 print("================================================================")
-print("Hand Controller (Pytorch) with ASL (PyTorch)")
+print("Hand Controller (TFLite) with Dials")
 print("================================================================")
 print("\tPress ESC to quit ...")
 print("----------------------------------------------------------------")
@@ -259,6 +331,8 @@ while True:
     image = frame
     output = image.copy()
 
+    lh_data, rh_data = None, None
+
     #            
     # BlazePalm pipeline
     #
@@ -289,8 +363,8 @@ while True:
 
         for i in range(len(flags)):
             landmark, flag = landmarks[i], flags[i]
-
-            if False: #if bShowLandmarks == True:
+            
+            if bShowLandmarks == True:
                 draw_landmarks(output, landmark[:,:2], HAND_CONNECTIONS, size=2)
                    
             if bShowDetection == True:
@@ -315,70 +389,14 @@ while True:
                     else:
                         handedness = "Right"
 
+                # Visual Control Dials (prepare hand data)
                 if handedness == "Left":
-                    hand_x = 10
-                    hand_y = 30
-                    #hand_color = (0, 0, 255) # BGR : Red
-                    hand_color = (0, 255, 0) # BGR : Green
-                    #hand_color = (0, 0, 255) # BGR : Blue
-                    hand_msg = 'LEFT='
+                    lh_data = HandData(handedness, landmark)
                 else:
-                    hand_x = frame_width-128
-                    hand_y = 30
-                    hand_color = (0, 0, 255) # BGR : Red
-                    #hand_color = (0, 255, 0) # BGR : Green
-                    #hand_color = (255, 0, 0) # BGR : Blue
-                    hand_msg = 'RIGHT='
+                    rh_data = HandData(handedness, landmark)
 
-                #print("Hand[",i,"]")
-                #print("    handedness = ",handedness)
-                #print("    landmark = ",landmark)
-                #print("    roi_landmark = ",roi_landmark)
-                        
-                # Determine point cloud of hand
-                points_raw=[]
-                if bNormalizedLandmarks == True:
-                    for lm in roi_landmark:
-                        points_raw.append([lm[0], lm[1], lm[2]])
-                else:                                
-                    for lm in landmark:
-                        points_raw.append([lm[0], lm[1], lm[2]])
-                points_raw = np.array(points_raw)
-                #print("    points_raw=",points_raw)
-
-                # Normalize point cloud of hand
-                points_norm = points_raw.copy()
-                min_x = np.min(points_raw[:, 0])
-                max_x = np.max(points_raw[:, 0])
-                min_y = np.min(points_raw[:, 1])
-                max_y = np.max(points_raw[:, 1])
-                for i in range(len(points_raw)):
-                    points_norm[i][0] = (points_norm[i][0] - min_x) / (max_x - min_x)
-                    points_norm[i][1] = (points_norm[i][1] - min_y) / (max_y - min_y)
-                    # PointNet model was trained on left hands, so need to mirror right hand landmarks
-                    if bMirrorImage == True and handedness == "Right":
-                        points_norm[i][0] = 1.0 - points_norm[i][0]
-                    if bMirrorImage == False and handedness == "Left": # for non-mirrored image
-                        points_norm[i][0] = 1.0 - points_norm[i][0]
-                #print("    points_norm=",points_norm)
-                                            
-                # Draw hand landmarks of each hand.
-                if bShowLandmarks == True:                
-                    draw_landmarks(output, landmark[:,:2], HAND_CONNECTIONS, color=hand_color, size=3)
-                        
-                pointst = torch.tensor([points_norm]).float().to(device)
-                label = model(pointst)
-                label = label.detach().cpu().numpy()
-                asl_id = np.argmax(label)
-                asl_sign = list(char2int.keys())[list(char2int.values()).index(asl_id)]                
-                                    
-                #asl_text = '['+str(asl_id)+']='+asl_sign
-                asl_text = handedness+"="+asl_sign
-                #print(asl_text)
-                cv2.putText(output,asl_text,
-                    (hand_x,hand_y),
-                    text_fontType,text_fontSize,
-                    hand_color,text_lineSize,text_lineType)        
+    # Visual Control Dials (display dials)
+    draw_control_overlay(output, lh_data, rh_data)
 
     # display real-time FPS counter (if valid)
     if rt_fps_valid == True and bShowFPS:
@@ -410,7 +428,7 @@ while True:
     if key == 99: # 'c'
         bStep = False
         bPause = False
-        
+
     if key == 100: # 'd'
         bShowDetection = not bShowDetection
         print("[INFO] Show Detection = ",bShowDetection)
