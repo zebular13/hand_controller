@@ -363,7 +363,7 @@ while True:
 
         for i in range(len(flags)):
             landmark, flag = landmarks[i], flags[i]
-            
+
             if bShowLandmarks == True:
                 draw_landmarks(output, landmark[:,:2], HAND_CONNECTIONS, size=2)
                    
@@ -448,21 +448,13 @@ while True:
 
     if key == 118: # 'v'
         bVerbose = not bVerbose
-        for pipeline_id in range(nb_blaze_pipelines):
-            if blaze_pipelines[pipeline_id]["supported"] and blaze_pipelines[pipeline_id]["selected"]:
-                blaze_detector = blaze_pipelines[pipeline_id]["detector"]
-                blaze_landmark = blaze_pipelines[pipeline_id]["landmark"]
-                
-                blaze_detector.set_debug(debug=bVerbose) 
-                blaze_landmark.set_debug(debug=bVerbose)
+        blaze_detector.set_debug(debug=bVerbose) 
+        blaze_landmark.set_debug(debug=bVerbose)
+        print("[INFO] Verbose = ",bVerbose)
 
     if key == 109: # 'm'
         bMirrorImage = not bMirrorImage
         print("[INFO] Mirror Image = ",bMirrorImage)
-    
-    if key == 110: # 'n'
-        bNormalizedLandmarks = not bNormalizedLandmarks        
-        print("[INFO] Normalized Landmarks = ",bNormalizedLandmarks)
     
     if key == 27 or key == 113: # ESC or 'q':
         break

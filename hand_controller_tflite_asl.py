@@ -140,10 +140,13 @@ if dev_video == None:
 else:
     input_video = dev_video  
 
+CAMERA_WIDTH = 640
+CAMERA_HEIGHT = 480
+
 # Open video
 cap = cv2.VideoCapture(input_video)
-frame_width = 640
-frame_height = 480
+frame_width = CAMERA_WIDTH
+frame_height = CAMERA_HEIGHT
 cap.set(cv2.CAP_PROP_FRAME_WIDTH,frame_width)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT,frame_height)
 #frame_width = int(round(cap.get(cv2.CAP_PROP_FRAME_WIDTH)))
@@ -283,7 +286,7 @@ while True:
 
         for i in range(len(flags)):
             landmark, flag = landmarks[i], flags[i]
-            
+
             if False: #if bShowLandmarks == True:
                 draw_landmarks(output, landmark[:,:2], HAND_CONNECTIONS, size=2)
                    
@@ -404,7 +407,7 @@ while True:
     if key == 99: # 'c'
         bStep = False
         bPause = False
-        
+
     if key == 100: # 'd'
         bShowDetection = not bShowDetection
         print("[INFO] Show Detection = ",bShowDetection)
@@ -424,13 +427,9 @@ while True:
 
     if key == 118: # 'v'
         bVerbose = not bVerbose
-        for pipeline_id in range(nb_blaze_pipelines):
-            if blaze_pipelines[pipeline_id]["supported"] and blaze_pipelines[pipeline_id]["selected"]:
-                blaze_detector = blaze_pipelines[pipeline_id]["detector"]
-                blaze_landmark = blaze_pipelines[pipeline_id]["landmark"]
-                
-                blaze_detector.set_debug(debug=bVerbose) 
-                blaze_landmark.set_debug(debug=bVerbose)
+        blaze_detector.set_debug(debug=bVerbose) 
+        blaze_landmark.set_debug(debug=bVerbose)
+        print("[INFO] Verbose = ",bVerbose)
 
     if key == 109: # 'm'
         bMirrorImage = not bMirrorImage
