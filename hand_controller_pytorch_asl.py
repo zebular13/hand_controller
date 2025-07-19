@@ -1,0 +1,456 @@
+'''
+Copyright 2025 Tria Technologies Inc.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+'''
+#
+# Hand Controller with ASL
+#
+# References:
+#   https://www.github.com/AlbertaBeef/blaze_app_python
+#   https://www.github.com/AlbertaBeef/asl_mediapipe_pointnet
+#
+# Dependencies:
+#   TFLite
+#      tensorflow
+#    or
+#      tflite_runtime
+#   PyTorch
+#      torch
+#   Vitis-AI 3.5
+#      xir
+#      vitis_ai_library
+#   Hailo
+#      hailo_platform
+#   plots
+#      pyplotly
+#      kaleido
+#
+
+
+import numpy as np
+import cv2
+import os
+from datetime import datetime
+import itertools
+
+from ctypes import *
+from typing import List
+import pathlib
+#import threading
+import time
+import sys
+import argparse
+import glob
+import subprocess
+import re
+import sys
+
+from datetime import datetime
+import plotly.graph_objects as go
+
+import getpass
+import socket
+user = getpass.getuser()
+host = socket.gethostname()
+user_host_descriptor = user+"@"+host
+print("[INFO] user@hosthame : ",user_host_descriptor)
+
+sys.path.append(os.path.abspath('blaze_app_python/'))
+sys.path.append(os.path.abspath('blaze_app_python/blaze_common/'))
+sys.path.append(os.path.abspath('blaze_app_python/blaze_tflite/'))
+sys.path.append(os.path.abspath('blaze_app_python/blaze_pytorch/'))
+sys.path.append(os.path.abspath('blaze_app_python/blaze_vitisai/'))
+sys.path.append(os.path.abspath('blaze_app_python/blaze_hailo/'))
+
+#from blaze_tflite.blazedetector import BlazeDetector as BlazeDetector_tflite
+#from blaze_tflite.blazelandmark import BlazeLandmark as BlazeLandmark_tflite
+from blaze_pytorch.blazedetector import BlazeDetector as BlazeDetector_pytorch
+from blaze_pytorch.blazelandmark import BlazeLandmark as BlazeLandmark_pytorch
+
+from visualization import draw_detections, draw_landmarks, draw_roi
+from visualization import HAND_CONNECTIONS, FACE_CONNECTIONS, POSE_FULL_BODY_CONNECTIONS, POSE_UPPER_BODY_CONNECTIONS
+
+from timeit import default_timer as timer
+
+import torch
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+sys.path.append('./asl_pointnet')
+from point_net import PointNet
+
+model_path = './asl_pointnet'
+model_name = 'point_net_1.pth'
+model = torch.load(os.path.join(model_path, model_name),weights_only=False,map_location=device)            
+
+char2int = {
+            "A":0, "B":1, "C":2, "D":3, "E":4, "F":5, "G":6, "H":7, "I":8, "K":9, "L":10, "M":11,
+            "N":12, "O":13, "P":14, "Q":15, "R":16, "S":17, "T":18, "U":19, "V":20, "W":21, "X":22, "Y":23
+            }
+
+bMirrorImage = True
+bNormalizedLandmarks = True
+print("[INFO] Mirror Image = ",bMirrorImage)
+print("[INFO] Normalized Landmarks = ",bNormalizedLandmarks)
+
+def get_media_dev_by_name(src):
+    devices = glob.glob("/dev/media*")
+    for dev in sorted(devices):
+        proc = subprocess.run(['media-ctl','-d',dev,'-p'], capture_output=True, encoding='utf8')
+        for line in proc.stdout.splitlines():
+            if src in line:
+                return dev
+
+def get_video_dev_by_name(src):
+    devices = glob.glob("/dev/video*")
+    for dev in sorted(devices):
+        proc = subprocess.run(['v4l2-ctl','-d',dev,'-D'], capture_output=True, encoding='utf8')
+        for line in proc.stdout.splitlines():
+            if src in line:
+                return dev
+
+
+# Parameters (tweaked for video)
+scale = 1.0
+text_fontType = cv2.FONT_HERSHEY_SIMPLEX
+text_fontSize = 0.75*scale
+text_color    = (0,0,255)
+text_lineSize = max( 1, int(2*scale) )
+text_lineType = cv2.LINE_AA
+
+# construct the argument parser and parse the arguments
+ap = argparse.ArgumentParser()
+ap.add_argument('-d', '--debug'      , default=False, action='store_true', help="Enable Debug mode. Default is off")
+ap.add_argument('-w', '--withoutview', default=False, action='store_true', help="Disable Output viewing. Default is on")
+ap.add_argument('-f', '--fps'        , default=False, action='store_true', help="Enable FPS display. Default is off")
+
+args = ap.parse_args()  
+  
+print('Command line options:')
+print(' --debug       : ', args.debug)
+print(' --withoutview : ', args.withoutview)
+print(' --fps         : ', args.fps)
+
+
+print("[INFO] Searching for USB camera ...")
+dev_video = get_video_dev_by_name("uvcvideo")
+dev_media = get_media_dev_by_name("uvcvideo")
+print(dev_video)
+print(dev_media)
+
+if dev_video == None:
+    input_video = 0
+else:
+    input_video = dev_video  
+
+# Open video
+cap = cv2.VideoCapture(input_video)
+frame_width = 640
+frame_height = 480
+cap.set(cv2.CAP_PROP_FRAME_WIDTH,frame_width)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT,frame_height)
+#frame_width = int(round(cap.get(cv2.CAP_PROP_FRAME_WIDTH)))
+#frame_height = int(round(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+print("[INFO] input : camera",input_video," (",frame_width,",",frame_height,")")
+
+detector_type = "blazepalm"
+landmark_type = "blazehandlandmark"
+
+#model1 = "blaze_app_python/blaze_tflite/models/palm_detection_lite.tflite"
+#blaze_detector = BlazeDetector_tflite(detector_type)
+model1 = "blaze_app_python/blaze_pytorch/models/blazepalm.pth"
+blaze_detector = BlazeDetector_pytorch(detector_type)
+blaze_detector.set_debug(debug=args.debug)
+blaze_detector.display_scores(debug=False)
+blaze_detector.load_model(model1)
+ 
+#model2 = "blaze_app_python/blaze_tflite/models/hand_landmark_lite.tflite"
+#blaze_landmark = BlazeLandmark_tflite(landmark_type)
+model2 = "blaze_app_python/blaze_pytorch/models/blazehand_landmark.pth"
+blaze_landmark = BlazeLandmark_pytorch(landmark_type)
+blaze_landmark.set_debug(debug=args.debug)
+blaze_landmark.load_model(model2)
+       
+        
+print("================================================================")
+print("Hand Controller (Pytorch) with ASL (PyTorch)")
+print("================================================================")
+print("\tPress ESC to quit ...")
+print("----------------------------------------------------------------")
+print("\tPress 'p' to pause video ...")
+print("\tPress 'c' to continue ...")
+print("\tPress 's' to step one frame at a time ...")
+print("\tPress 'w' to take a photo ...")
+print("----------------------------------------------------------------")
+print("\tPress 'e' to toggle scores image on/off")
+print("\tPress 'f' to toggle FPS display on/off")
+print("\tPress 'v' to toggle verbose on/off")
+print("----------------------------------------------------------------")
+print("\tPress 'm' to toggle horizontal mirror (ie. selfie-mode) ...")
+print("\tPress 'n' to toggle use of normalized landmarks for pointnet ...")
+print("================================================================")
+
+bStep = False
+bPause = False
+bWrite = False
+bShowScores = False
+bShowFPS = args.fps
+bVerbose = args.debug
+bViewOutput = not args.withoutview
+
+def ignore(x):
+    pass
+
+app_main_title = "Hand Controller Demo"
+app_ctrl_title = "Hand Controller Demo"
+if bViewOutput:
+    cv2.namedWindow(app_main_title)
+
+thresh_min_score = blaze_detector.min_score_thresh
+thresh_min_score_prev = thresh_min_score
+if bViewOutput:
+    cv2.createTrackbar('threshMinScore', app_ctrl_title, int(thresh_min_score*100), 100, ignore)
+
+image = []
+output = []
+
+frame_count = 0
+
+# init the real-time FPS counter
+rt_fps_count = 0
+rt_fps_time = cv2.getTickCount()
+rt_fps_valid = False
+rt_fps = 0.0
+rt_fps_message = "FPS: {0:.2f}".format(rt_fps)
+rt_fps_x = int(10*scale)
+rt_fps_y = int((frame_height-10)*scale)
+
+while True:
+    # init the real-time FPS counter
+    if rt_fps_count == 0:
+        rt_fps_time = cv2.getTickCount()
+
+    frame_count = frame_count + 1
+
+    flag, frame = cap.read()
+    if not flag:
+        print("[ERROR] cap.read() FAILEd !")
+        break
+
+    if bMirrorImage == True:
+        # Mirror horizontally for selfie-mode
+        frame = cv2.flip(frame, 1)        
+        
+    # Get trackbar values
+    if bViewOutput:
+        thresh_min_score = cv2.getTrackbarPos('threshMinScore', app_ctrl_title)
+        if thresh_min_score < 10:
+            thresh_min_score = 10
+            cv2.setTrackbarPos('threshMinScore', app_ctrl_title,thresh_min_score)
+        thresh_min_score = thresh_min_score*(1/100)
+        if thresh_min_score != thresh_min_score_prev:
+            blaze_detector.min_score_thresh = thresh_min_score
+            thresh_min_score_prev = thresh_min_score            
+                
+    #image = cv2.resize(frame,(0,0), fx=scale, fy=scale) 
+    image = frame
+    output = image.copy()
+
+    #            
+    # BlazePalm pipeline
+    #
+    
+    start = timer()
+    image = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
+    img1,scale1,pad1=blaze_detector.resize_pad(image)
+    profile_resize = timer()-start
+
+    normalized_detections = blaze_detector.predict_on_image(img1)
+    if len(normalized_detections) > 0:
+  
+        start = timer()          
+        detections = blaze_detector.denormalize_detections(normalized_detections,scale1,pad1)
+                    
+        xc,yc,scale,theta = blaze_detector.detection2roi(detections)
+        roi_img,roi_affine,roi_box = blaze_landmark.extract_roi(image,xc,yc,theta,scale)
+        profile_extract = timer()-start
+
+        results = blaze_landmark.predict(roi_img)
+        #flags, normalized_landmarks = results
+        flags, normalized_landmarks, handedness_scores = results
+                    
+        roi_landmarks = normalized_landmarks.copy()
+                
+        start = timer() 
+        landmarks = blaze_landmark.denormalize_landmarks(normalized_landmarks, roi_affine)
+
+        for i in range(len(flags)):
+            landmark, flag = landmarks[i], flags[i]
+            if True: #flag>.5:
+                draw_landmarks(output, landmark[:,:2], HAND_CONNECTIONS, size=2)
+                   
+            draw_roi(output,roi_box)
+            draw_detections(output,detections)
+            profile_annotate = timer()-start
+
+            for i in range(len(flags)):
+                flag = flags[i]
+                landmark = landmarks[i]
+                handedness_score = handedness_scores[i]
+                roi_landmark = roi_landmarks[i,:,:]
+                        
+                if bMirrorImage == True:
+                    if handedness_score >= 0.5:
+                        handedness = "Left"
+                    else:
+                        handedness = "Right"
+                else:                               
+                    if handedness_score < 0.5:
+                        handedness = "Left"
+                    else:
+                        handedness = "Right"
+
+                if handedness == "Left":
+                    hand_x = 10
+                    hand_y = 30
+                    #hand_color = (0, 0, 255) # BGR : Red
+                    hand_color = (0, 255, 0) # BGR : Green
+                    #hand_color = (0, 0, 255) # BGR : Blue
+                    hand_msg = 'LEFT='
+                else:
+                    hand_x = frame_width-128
+                    hand_y = 30
+                    hand_color = (0, 0, 255) # BGR : Red
+                    #hand_color = (0, 255, 0) # BGR : Green
+                    #hand_color = (255, 0, 0) # BGR : Blue
+                    hand_msg = 'RIGHT='
+
+                #print("Hand[",i,"]")
+                #print("    handedness = ",handedness)
+                #print("    landmark = ",landmark)
+                #print("    roi_landmark = ",roi_landmark)
+                        
+                # Determine point cloud of hand
+                points_raw=[]
+                if bNormalizedLandmarks == True:
+                    for lm in roi_landmark:
+                        points_raw.append([lm[0], lm[1], lm[2]])
+                else:                                
+                    for lm in landmark:
+                        points_raw.append([lm[0], lm[1], lm[2]])
+                points_raw = np.array(points_raw)
+                #print("    points_raw=",points_raw)
+
+                # Normalize point cloud of hand
+                points_norm = points_raw.copy()
+                min_x = np.min(points_raw[:, 0])
+                max_x = np.max(points_raw[:, 0])
+                min_y = np.min(points_raw[:, 1])
+                max_y = np.max(points_raw[:, 1])
+                for i in range(len(points_raw)):
+                    points_norm[i][0] = (points_norm[i][0] - min_x) / (max_x - min_x)
+                    points_norm[i][1] = (points_norm[i][1] - min_y) / (max_y - min_y)
+                    # PointNet model was trained on left hands, so need to mirror right hand landmarks
+                    if bMirrorImage == True and handedness == "Right":
+                        points_norm[i][0] = 1.0 - points_norm[i][0]
+                    if bMirrorImage == False and handedness == "Left": # for non-mirrored image
+                        points_norm[i][0] = 1.0 - points_norm[i][0]
+                #print("    points_norm=",points_norm)
+                                            
+                # Draw hand landmarks of each hand.
+                draw_landmarks(output, landmark[:,:2], HAND_CONNECTIONS, color=hand_color, size=3)
+                        
+                pointst = torch.tensor([points_norm]).float().to(device)
+                label = model(pointst)
+                label = label.detach().cpu().numpy()
+                asl_id = np.argmax(label)
+                asl_sign = list(char2int.keys())[list(char2int.values()).index(asl_id)]                
+                                    
+                #asl_text = '['+str(asl_id)+']='+asl_sign
+                asl_text = handedness+"="+asl_sign
+                #print(asl_text)
+                cv2.putText(output,asl_text,
+                    (hand_x,hand_y),
+                    text_fontType,text_fontSize,
+                    hand_color,text_lineSize,text_lineType)        
+
+    # display real-time FPS counter (if valid)
+    if rt_fps_valid == True and bShowFPS:
+        cv2.putText(output,rt_fps_message, (rt_fps_x,rt_fps_y),text_fontType,text_fontSize,text_color,text_lineSize,text_lineType)
+
+    if bViewOutput:
+        # show the output image
+        cv2.imshow(app_main_title, output)
+
+    if bStep == True:
+        key = cv2.waitKey(0)
+    elif bPause == True:
+        key = cv2.waitKey(0)
+    else:
+        key = cv2.waitKey(1)
+
+    #print(key)
+    
+    bWrite = False
+    if key == 119: # 'w'
+        bWrite = True
+
+    if key == 115: # 's'
+        bStep = True    
+    
+    if key == 112: # 'p'
+        bPause = not bPause
+
+    if key == 99: # 'c'
+        bStep = False
+        bPause = False
+        
+    if key == 101: # 'e'
+        bShowScores = not bShowScores
+        blaze_detector.display_scores(debug=bShowScores)
+        if not bShowScores:
+           cv2.destroyWindow("Detection Scores (sigmoid)")
+
+    if key == 102: # 'f'
+        bShowFPS = not bShowFPS
+
+    if key == 118: # 'v'
+        bVerbose = not bVerbose
+        for pipeline_id in range(nb_blaze_pipelines):
+            if blaze_pipelines[pipeline_id]["supported"] and blaze_pipelines[pipeline_id]["selected"]:
+                blaze_detector = blaze_pipelines[pipeline_id]["detector"]
+                blaze_landmark = blaze_pipelines[pipeline_id]["landmark"]
+                
+                blaze_detector.set_debug(debug=bVerbose) 
+                blaze_landmark.set_debug(debug=bVerbose)
+
+    if key == 109: # 'm'
+        bMirrorImage = not bMirrorImage
+        print("[INFO] Mirror Image = ",bMirrorImage)
+    
+    if key == 110: # 'n'
+        bNormalizedLandmarks = not bNormalizedLandmarks        
+        print("[INFO] Normalized Landmarks = ",bNormalizedLandmarks)
+    
+    if key == 27 or key == 113: # ESC or 'q':
+        break
+
+    # Update the real-time FPS counter
+    rt_fps_count = rt_fps_count + 1
+    if rt_fps_count == 10:
+        t = (cv2.getTickCount() - rt_fps_time)/cv2.getTickFrequency()
+        rt_fps_valid = 1
+        rt_fps = 10.0/t
+        rt_fps_message = "FPS: {0:.2f}".format(rt_fps)
+        #print("[INFO] ",rt_fps_message)
+        rt_fps_count = 0
+
+# Cleanup
+cv2.destroyAllWindows()
