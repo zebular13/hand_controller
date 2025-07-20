@@ -48,7 +48,6 @@ import re
 import sys
 
 from datetime import datetime
-import plotly.graph_objects as go
 
 import getpass
 import socket
