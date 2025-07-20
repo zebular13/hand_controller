@@ -139,6 +139,23 @@ cap.set(cv2.CAP_PROP_FRAME_HEIGHT,frame_height)
 #frame_height = int(round(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 print("[INFO] input : camera",input_video," (",frame_width,",",frame_height,")")
 
+# Output directory for captured images
+output_dir = './captured-images'
+if not os.path.exists(output_dir):
+    # Create the output directory if it doesn't already exist      
+    os.mkdir(output_dir)            
+
+# Profiling output
+profile_csv = './hand_controller_tflite_dials_profiling.csv'
+if os.path.isfile(profile_csv):
+    f_profile_csv = open(profile_csv, "a")
+    print("[INFO] Appending to existing profiling results file :",profile_csv)
+else:
+    f_profile_csv = open(profile_csv, "w")
+    print("[INFO] Creating new profiling results file :",profile_csv)
+    f_profile_csv.write("time,user,hostname,pipeline,detections,resize,detector_pre,detector_model,detector_post,extract_roi,landmark_pre,landmark_model,landmark_post,annotate,asl_pre,asl_model,asl_post,total,fps\n")
+
+pipeline = "hand_controller_tflite_dials"
 detector_type = "blazepalm"
 landmark_type = "blazehandlandmark"
 
@@ -348,7 +365,7 @@ while True:
     profile_detector_pre   = 0
     profile_detector_model = 0
     profile_detector_post  = 0
-    profile_extract        = 0
+    profile_extract_roi    = 0
     profile_landmark_pre   = 0
     profile_landmark_model = 0
     profile_landmark_post  = 0
@@ -375,7 +392,7 @@ while True:
                     
         xc,yc,scale,theta = blaze_detector.detection2roi(detections)
         roi_img,roi_affine,roi_box = blaze_landmark.extract_roi(image,xc,yc,theta,scale)
-        profile_extract = timer()-start
+        profile_extract_roi = timer()-start
 
         results = blaze_landmark.predict(roi_img)
         #flags, normalized_landmarks = results
@@ -453,14 +470,36 @@ while True:
     profile_landmark = profile_landmark_pre + profile_landmark_model + profile_landmark_post
     profile_total = profile_resize + \
                     profile_detector + \
-                    profile_extract + \
+                    profile_extract_roi + \
                     profile_landmark + \
                     profile_annotate + \
                     profile_dials
     profile_fps = 1.0 / profile_total
     if bProfileLog == True:
-        print(f"[PROFILING] FPS={profile_fps:.3f}fps, Total={profile_total*1000:.3f}ms, Detection={profile_detector*1000:.3f}ms, Extract={profile_extract*1000:.3f}ms, Landmark={profile_landmark*1000:.3f}ms, Annotate={profile_annotate*1000:.3f}ms, DIALS={profile_dials*1000:.3f}ms")
-    
+        # display profiling results to console
+        print(f"[PROFILING] hands={len(normalized_detections)}, FPS={profile_fps:.3f}fps, Total={profile_total*1000:.3f}ms, Detection={profile_detector*1000:.3f}ms, Extract={profile_extract_roi*1000:.3f}ms, Landmark={profile_landmark*1000:.3f}ms, Annotate={profile_annotate*1000:.3f}ms, DIALS={profile_dials*1000:.3f}ms")
+        # write profiling results to csv file
+        timestamp = datetime.now()
+        csv_str = \
+            str(timestamp)+","+\
+            str(user)+","+\
+            str(host)+","+\
+            pipeline+","+\
+            str(len(normalized_detections))+","+\
+            str(profile_resize)+","+\
+            str(profile_detector_pre)+","+\
+            str(profile_detector_model)+","+\
+            str(profile_detector_post)+","+\
+            str(profile_extract_roi)+","+\
+            str(profile_landmark_pre)+","+\
+            str(profile_landmark_model)+","+\
+            str(profile_landmark_post)+","+\
+            str(profile_annotate)+","+\
+            str(profile_dials)+","+\
+            str(profile_total)+","+\
+            str(profile_fps)+"\n"
+        f_profile_csv.write(csv_str)
+
     #
     # Annotated Output
     #
@@ -541,4 +580,5 @@ while True:
         rt_fps_count = 0
 
 # Cleanup
+f_profile_csv.close()
 cv2.destroyAllWindows()

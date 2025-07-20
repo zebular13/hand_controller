@@ -156,6 +156,23 @@ cap.set(cv2.CAP_PROP_FRAME_HEIGHT,frame_height)
 #frame_height = int(round(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 print("[INFO] input : camera",input_video," (",frame_width,",",frame_height,")")
 
+# Output directory for captured images
+output_dir = './captured-images'
+if not os.path.exists(output_dir):
+    # Create the output directory if it doesn't already exist      
+    os.mkdir(output_dir)            
+
+# Profiling output
+profile_csv = './hand_controller_pytorch_asl_profiling.csv'
+if os.path.isfile(profile_csv):
+    f_profile_csv = open(profile_csv, "a")
+    print("[INFO] Appending to existing profiling results file :",profile_csv)
+else:
+    f_profile_csv = open(profile_csv, "w")
+    print("[INFO] Creating new profiling results file :",profile_csv)
+    f_profile_csv.write("time,user,hostname,pipeline,detections,resize,detector_pre,detector_model,detector_post,extract_roi,landmark_pre,landmark_model,landmark_post,annotate,asl_pre,asl_model,asl_post,total,fps\n")
+
+pipeline = "hand_controller_pytorch_asl"
 detector_type = "blazepalm"
 landmark_type = "blazehandlandmark"
 
@@ -273,12 +290,14 @@ while True:
     profile_detector_pre   = 0
     profile_detector_model = 0
     profile_detector_post  = 0
-    profile_extract        = 0
+    profile_extract_roi    = 0
     profile_landmark_pre   = 0
     profile_landmark_model = 0
     profile_landmark_post  = 0
     profile_annotate       = 0
-    profile_asl            = 0
+    profile_asl_pre        = 0
+    profile_asl_model      = 0
+    profile_asl_post       = 0
     #
     profile_total          = 0
     profile_fps            = 0
@@ -300,7 +319,7 @@ while True:
                     
         xc,yc,scale,theta = blaze_detector.detection2roi(detections)
         roi_img,roi_affine,roi_box = blaze_landmark.extract_roi(image,xc,yc,theta,scale)
-        profile_extract = timer()-start
+        profile_extract_roi = timer()-start
 
         results = blaze_landmark.predict(roi_img)
         #flags, normalized_landmarks = results
@@ -319,11 +338,12 @@ while True:
         # ASL
         # 
 
-        start = timer()
         for i in range(len(flags)):
             landmark, flag = landmarks[i], flags[i]
 
             for i in range(len(flags)):
+
+                start = timer()
                 flag = flags[i]
                 landmark = landmarks[i]
                 handedness_score = handedness_scores[i]
@@ -386,14 +406,21 @@ while True:
                     if bMirrorImage == False and handedness == "Left": # for non-mirrored image
                         points_norm[i][0] = 1.0 - points_norm[i][0]
                 #print("    points_norm=",points_norm)
-                                            
+                profile_asl_pre += timer()-start
+
+                start = timer()
                 # Draw hand landmarks of each hand.
                 if bShowLandmarks == True:                
                     draw_landmarks(output, landmark[:,:2], HAND_CONNECTIONS, color=hand_color, size=3)
+                profile_annotate += timer()-start
                         
+                start = timer()
                 pointst = torch.tensor([points_norm]).float().to(device)
                 label = model(pointst)
                 label = label.detach().cpu().numpy()
+                profile_asl_model += timer()-start
+
+                start = timer()
                 asl_id = np.argmax(label)
                 asl_sign = list(char2int.keys())[list(char2int.values()).index(asl_id)]                
                                     
@@ -404,9 +431,8 @@ while True:
                     (hand_x,hand_y),
                     text_fontType,text_fontSize,
                     hand_color,text_lineSize,text_lineType)        
+                profile_asl_post += timer()-start
 
-        profile_asl = timer()-start
-        
     # display real-time FPS counter (if valid)
     if rt_fps_valid == True and bShowFPS:
         cv2.putText(output,rt_fps_message, (rt_fps_x,rt_fps_y),text_fontType,text_fontSize,text_color,text_lineSize,text_lineType)
@@ -425,16 +451,41 @@ while True:
         profile_landmark_model = blaze_landmark.profile_model
         profile_landmark_post  = blaze_landmark.profile_post
     profile_landmark = profile_landmark_pre + profile_landmark_model + profile_landmark_post
+    profile_asl = profile_asl_pre + profile_asl_model + profile_asl_post
     profile_total = profile_resize + \
                     profile_detector + \
-                    profile_extract + \
+                    profile_extract_roi + \
                     profile_landmark + \
                     profile_annotate + \
                     profile_asl
     profile_fps = 1.0 / profile_total
     if bProfileLog == True:
-        print(f"[PROFILING] FPS={profile_fps:.3f}fps, Total={profile_total*1000:.3f}ms, Detection={profile_detector*1000:.3f}ms, Extract={profile_extract*1000:.3f}ms, Landmark={profile_landmark*1000:.3f}ms, Annotate={profile_annotate*1000:.3f}ms, ASL={profile_asl*1000:.3f}ms")
-    
+        # display profiling results to console
+        print(f"[PROFILING] hands={len(normalized_detections)}, FPS={profile_fps:.3f}fps, Total={profile_total*1000:.3f}ms, Detection={profile_detector*1000:.3f}ms, Extract={profile_extract_roi*1000:.3f}ms, Landmark={profile_landmark*1000:.3f}ms, Annotate={profile_annotate*1000:.3f}ms, ASL={profile_asl*1000:.3f}ms")
+        # write profiling results to csv file
+        timestamp = datetime.now()
+        csv_str = \
+            str(timestamp)+","+\
+            str(user)+","+\
+            str(host)+","+\
+            pipeline+","+\
+            str(len(normalized_detections))+","+\
+            str(profile_resize)+","+\
+            str(profile_detector_pre)+","+\
+            str(profile_detector_model)+","+\
+            str(profile_detector_post)+","+\
+            str(profile_extract_roi)+","+\
+            str(profile_landmark_pre)+","+\
+            str(profile_landmark_model)+","+\
+            str(profile_landmark_post)+","+\
+            str(profile_annotate)+","+\
+            str(profile_asl_pre)+","+\
+            str(profile_asl_model)+","+\
+            str(profile_asl_post)+","+\
+            str(profile_total)+","+\
+            str(profile_fps)+"\n"
+        f_profile_csv.write(csv_str)
+
     #
     # Annotated Output
     #
@@ -519,4 +570,5 @@ while True:
         rt_fps_count = 0
 
 # Cleanup
+f_profile_csv.close()
 cv2.destroyAllWindows()
