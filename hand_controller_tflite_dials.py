@@ -103,6 +103,7 @@ text_lineType = cv2.LINE_AA
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument('-d', '--debug'      , default=False, action='store_true', help="Enable Debug mode. Default is off")
+ap.add_argument('-z', '--profilelog' , default=False, action='store_true', help="Enable Profile Log (Latency). Default is off")
 ap.add_argument('-w', '--withoutview', default=False, action='store_true', help="Disable Output viewing. Default is on")
 ap.add_argument('-f', '--fps'        , default=False, action='store_true', help="Enable FPS display. Default is off")
 
@@ -110,6 +111,7 @@ args = ap.parse_args()
   
 print('Command line options:')
 print(' --debug       : ', args.debug)
+print(' --profilelog  : ', args.profilelog)
 print(' --withoutview : ', args.withoutview)
 print(' --fps         : ', args.fps)
 
@@ -257,6 +259,7 @@ print("\tPress 'd' to toggle detection overlay on/off")
 print("\tPress 'l' to toggle landmarks overlay on/off")
 print("\tPress 'e' to toggle scores image on/off")
 print("\tPress 'f' to toggle FPS display on/off")
+print("\tPress 'z' to toggle profiling log on/off")
 print("\tPress 'v' to toggle verbose on/off")
 print("----------------------------------------------------------------")
 print("\tPress 'm' to toggle horizontal mirror (ie. selfie-mode) ...")
@@ -272,6 +275,7 @@ bShowScores = False
 bShowFPS = args.fps
 bVerbose = args.debug
 bViewOutput = not args.withoutview
+bProfileLog = args.profilelog
 
 def ignore(x):
     pass
@@ -331,7 +335,29 @@ while True:
     image = frame
     output = image.copy()
 
+    #            
+    # Visual Control Dials (init hand data)
+    #
+
     lh_data, rh_data = None, None
+    
+    #
+    # Profiling
+    #
+
+    profile_resize         = 0
+    profile_detector_pre   = 0
+    profile_detector_model = 0
+    profile_detector_post  = 0
+    profile_extract        = 0
+    profile_landmark_pre   = 0
+    profile_landmark_model = 0
+    profile_landmark_post  = 0
+    profile_annotate       = 0
+    profile_dials          = 0
+    #
+    profile_total          = 0
+    profile_fps            = 0
 
     #            
     # BlazePalm pipeline
@@ -367,10 +393,18 @@ while True:
             if bShowLandmarks == True:
                 draw_landmarks(output, landmark[:,:2], HAND_CONNECTIONS, size=2)
                    
-            if bShowDetection == True:
-                draw_roi(output,roi_box)
-                draw_detections(output,detections)
-            profile_annotate = timer()-start
+        if bShowDetection == True:
+            draw_roi(output,roi_box)
+            draw_detections(output,detections)
+        profile_annotate = timer()-start
+
+        #
+        # Visual Control Dials (prepare hand data)
+        # 
+
+        start = timer()
+        for i in range(len(flags)):
+            landmark, flag = landmarks[i], flags[i]
 
             for i in range(len(flags)):
                 flag = flags[i]
@@ -398,14 +432,46 @@ while True:
     # Visual Control Dials (display dials)
     draw_control_overlay(output, lh_data, rh_data)
 
+    profile_dials = timer()-start
+
     # display real-time FPS counter (if valid)
     if rt_fps_valid == True and bShowFPS:
         cv2.putText(output,rt_fps_message, (rt_fps_x,rt_fps_y),text_fontType,text_fontSize,text_color,text_lineSize,text_lineType)
 
+    #
+    # Profiling
+    #
+    profile_detector_pre   = blaze_detector.profile_pre
+    profile_detector_model = blaze_detector.profile_model
+    profile_detector_post  = blaze_detector.profile_post
+    profile_detector = profile_detector_pre + profile_detector_model + profile_detector_post
+    if len(normalized_detections) > 0:
+        profile_landmark_pre   = blaze_landmark.profile_pre
+        profile_landmark_model = blaze_landmark.profile_model
+        profile_landmark_post  = blaze_landmark.profile_post
+    profile_landmark = profile_landmark_pre + profile_landmark_model + profile_landmark_post
+    profile_total = profile_resize + \
+                    profile_detector + \
+                    profile_extract + \
+                    profile_landmark + \
+                    profile_annotate + \
+                    profile_dials
+    profile_fps = 1.0 / profile_total
+    if bProfileLog == True:
+        print(f"[PROFILING] FPS={profile_fps:.3f}fps, Total={profile_total*1000:.3f}ms, Detection={profile_detector*1000:.3f}ms, Extract={profile_extract*1000:.3f}ms, Landmark={profile_landmark*1000:.3f}ms, Annotate={profile_annotate*1000:.3f}ms, DIALS={profile_dials*1000:.3f}ms")
+    
+    #
+    # Annotated Output
+    #
+    
     if bViewOutput:
         # show the output image
         cv2.imshow(app_main_title, output)
 
+    #
+    # Keyboard Control
+    #
+         
     if bStep == True:
         key = cv2.waitKey(0)
     elif bPause == True:
@@ -452,6 +518,10 @@ while True:
         blaze_landmark.set_debug(debug=bVerbose)
         print("[INFO] Verbose = ",bVerbose)
 
+    if key == 122: # 'z'
+        bProfileLog = not bProfileLog
+        print("[INFO] Profiling = ",bProfileLog)
+        
     if key == 109: # 'm'
         bMirrorImage = not bMirrorImage
         print("[INFO] Mirror Image = ",bMirrorImage)
