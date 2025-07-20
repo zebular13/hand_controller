@@ -436,6 +436,8 @@ while True:
     # display real-time FPS counter (if valid)
     if rt_fps_valid == True and bShowFPS:
         cv2.putText(output,rt_fps_message, (rt_fps_x,rt_fps_y),text_fontType,text_fontSize,text_color,text_lineSize,text_lineType)
+        if not bViewOutput:
+            print("[REAL-TIME]",rt_fps_message)
 
     #
     # Profiling
