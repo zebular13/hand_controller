@@ -47,10 +47,11 @@ def generate_launch_description():
                ("image_raw", "usbcam_image"),
                ("hand_controller/cmd_vel", "cmd_vel")
             ]            
-        ),
-        Node(
-            package='twist_stamper',
-            executable='twist_stamper',
-            remappings=[("cmd_vel_in", "cmd_vel"),("cmd_vel_out", "mecanum_drive_controller/cmd_vel")]            
-        )        
+        )
+        # not available on QIRP v1.4
+        #Node(
+        #    package='twist_stamper',
+        #    executable='twist_stamper',
+        #    remappings=[("cmd_vel_in", "cmd_vel"),("cmd_vel_out", "mecanum_drive_controller/cmd_vel")]            
+        #)        
     ])
