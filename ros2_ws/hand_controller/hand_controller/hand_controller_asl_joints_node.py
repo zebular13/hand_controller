@@ -302,7 +302,6 @@ class HandControllerAslJointsNode(Node):
                     asl_sign = list(char2int.keys())[list(char2int.values()).index(asl_id)]                
                     #self.get_logger().info('Detected Sign: "%s"' % asl_sign)
 
-                    #asl_text = '['+str(asl_id)+']='+asl_sign
                     asl_text = hand_msg+asl_sign
                     cv2.putText(annotated_image,asl_text,
                         (hand_x,hand_y),
@@ -310,8 +309,6 @@ class HandControllerAslJointsNode(Node):
                         hand_color,self.text_lineSize,self.text_lineType)
         
                     if handedness == "Left":
-                        self.get_logger().info('Left Hand Sign: "%s"' % asl_sign)
-                        
                         # Define action
                         if asl_sign == 'A':
                           self.actionDetected = "A : Advance"
@@ -331,10 +328,11 @@ class HandControllerAslJointsNode(Node):
                             (hand_x,hand_y*2),
                             self.text_fontType,self.text_fontSize,
                             hand_color,self.text_lineSize,self.text_lineType)
+
+                        self.get_logger().info(f"{asl_text} => {action_text}")
+
  
                     if handedness == "Right":
-                        self.get_logger().info('Right Hand Sign: "%s"' % asl_sign)
-
                         # Define action
                         if asl_sign == 'A':
                           self.actionDetected = "A : Close Gripper"
@@ -346,6 +344,10 @@ class HandControllerAslJointsNode(Node):
                             (hand_x,hand_y*2),
                             self.text_fontType,self.text_fontSize,
                             hand_color,self.text_lineSize,self.text_lineType)
+
+
+                        self.get_logger().info(f"{asl_text} => {action_text}")
+
 
                 except:
                     #print("[ERROR] Exception occured during ASL classification ...")
