@@ -153,7 +153,7 @@ if os.path.isfile(profile_csv):
 else:
     f_profile_csv = open(profile_csv, "w")
     print("[INFO] Creating new profiling results file :",profile_csv)
-    f_profile_csv.write("time,user,hostname,pipeline,detections,resize,detector_pre,detector_model,detector_post,extract_roi,landmark_pre,landmark_model,landmark_post,annotate,asl_pre,asl_model,asl_post,total,fps\n")
+    f_profile_csv.write("time,user,hostname,pipeline,detections,resize,detector_pre,detector_model,detector_post,extract_roi,landmark_pre,landmark_model,landmark_post,annotate,dials,total,fps\n")
 
 pipeline = "hand_controller_tflite_dials"
 detector_type = "blazepalm"
