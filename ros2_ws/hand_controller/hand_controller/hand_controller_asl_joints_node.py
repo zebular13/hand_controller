@@ -61,6 +61,9 @@ class HandControllerAslJointsNode(Node):
         self.subscriber1_ = self.create_subscription(Image,'image_raw',self.listener_callback,10)
         self.subscriber1_  # prevent unused variable warning
         self.publisher1_ = self.create_publisher(Image, 'hand_controller/image_annotated', 10)
+        # Create publishers for the '/arm_controller/joint_trajectory' topic
+        self.publisher2_ = self.create_publisher(JointTrajectory, '/arm_controller/joint_trajectory', 10)
+        self.publisher3_ = self.create_publisher(JointTrajectory, '/gripper_controller/joint_trajectory', 10)
 
         # verbose
         self.declare_parameter("verbose", True)
@@ -130,10 +133,6 @@ class HandControllerAslJointsNode(Node):
         # Sign Detection status
         self.asl_sign = ""
         self.actionDetected = ""        
-
-        # Create a publisher for the '/arm_controller/joint_trajectory' topic
-        self.publisher2_ = self.create_publisher(JointTrajectory, '/arm_controller/joint_trajectory', 10)
-        self.publisher3_ = self.create_publisher(JointTrajectory, '/gripper_controller/joint_trajectory', 10)
 
         # Create the JointTrajectory messages
         self.arm_trajectory_command = JointTrajectory()
@@ -257,7 +256,7 @@ class HandControllerAslJointsNode(Node):
                     hand_color = (0, 255, 0) # RGB : Green
                     hand_msg = 'LEFT='
                 else:
-                    hand_x = image_width-128
+                    hand_x = image_width-256
                     hand_y = 30
                     hand_color = (255, 0, 0) # RGB : Red
                     hand_msg = 'RIGHT='
@@ -306,9 +305,9 @@ class HandControllerAslJointsNode(Node):
                     #asl_text = '['+str(asl_id)+']='+asl_sign
                     asl_text = hand_msg+asl_sign
                     cv2.putText(annotated_image,asl_text,
-                    	(hand_x,hand_y),
-                    	self.text_fontType,self.text_fontSize,
-                    	hand_color,self.text_lineSize,self.text_lineType)
+                        (hand_x,hand_y),
+                        self.text_fontType,self.text_fontSize,
+                        hand_color,self.text_lineSize,self.text_lineType)
         
                     if handedness == "Left":
                         self.get_logger().info('Left Hand Sign: "%s"' % asl_sign)
@@ -327,6 +326,12 @@ class HandControllerAslJointsNode(Node):
                         if asl_sign == 'D':
                           self.actionDetected = "D : Down"
 
+                        action_text = '['+self.actionDetected+']'
+                        cv2.putText(annotated_image,action_text,
+                            (hand_x,hand_y*2),
+                            self.text_fontType,self.text_fontSize,
+                            hand_color,self.text_lineSize,self.text_lineType)
+ 
                     if handedness == "Right":
                         self.get_logger().info('Right Hand Sign: "%s"' % asl_sign)
 
@@ -335,6 +340,12 @@ class HandControllerAslJointsNode(Node):
                           self.actionDetected = "A : Close Gripper"
                         if asl_sign == 'B':
                           self.actionDetected = "B : Open Gripper"                                
+
+                        action_text = '['+self.actionDetected+']'
+                        cv2.putText(annotated_image,action_text,
+                            (hand_x,hand_y*2),
+                            self.text_fontType,self.text_fontSize,
+                            hand_color,self.text_lineSize,self.text_lineType)
 
                 except:
                     #print("[ERROR] Exception occured during ASL classification ...")
@@ -385,7 +396,7 @@ class HandControllerAslJointsNode(Node):
                         self.arm_trajectory_command.points = [arm_point]
         
                         # Publish the message
-                        self.get_logger().info(f"Publishing arm joint angles : {self.arm_trajectory_command.points}")        
+                        #self.get_logger().info(f"Publishing arm joint angles : {self.arm_trajectory_command.points}")        
                         self.publisher2_.publish(self.arm_trajectory_command)
                         
 
@@ -410,7 +421,7 @@ class HandControllerAslJointsNode(Node):
                         self.gripper_trajectory_command.points = [gripper_point]
         
                         # Publish the message
-                        self.get_logger().info(f"Publishing gripper joint angles : {self.gripper_trajectory_command.points}")        
+                        #self.get_logger().info(f"Publishing gripper joint angles : {self.gripper_trajectory_command.points}")        
                         self.publisher3_.publish(self.gripper_trajectory_command)
 
                     except Exception as e:

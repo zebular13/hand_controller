@@ -62,6 +62,7 @@ class HandControllerAslTwistNode(Node):
         self.subscriber1_ = self.create_subscription(Image,'image_raw',self.listener_callback,10)
         self.subscriber1_  # prevent unused variable warning
         self.publisher1_ = self.create_publisher(Image, 'hand_controller/image_annotated', 10)
+        # Create publisher for velocity command (twist)
         self.publisher2_ = self.create_publisher(Twist, 'hand_controller/cmd_vel', 10)        
 
         # verbose
@@ -219,7 +220,7 @@ class HandControllerAslTwistNode(Node):
                     hand_color = (0, 255, 0) # RGB : Green
                     hand_msg = 'LEFT='
                 else:
-                    hand_x = image_width-128
+                    hand_x = image_width-256
                     hand_y = 30
                     hand_color = (255, 0, 0) # RGB : Red
                     hand_msg = 'RIGHT='
@@ -268,9 +269,9 @@ class HandControllerAslTwistNode(Node):
                     #asl_text = '['+str(asl_id)+']='+asl_sign
                     asl_text = hand_msg+asl_sign
                     cv2.putText(annotated_image,asl_text,
-                    	(hand_x,hand_y),
-                    	self.text_fontType,self.text_fontSize,
-                    	hand_color,self.text_lineSize,self.text_lineType)
+                        (hand_x,hand_y),
+                        self.text_fontType,self.text_fontSize,
+                        hand_color,self.text_lineSize,self.text_lineType)
         
                     if handedness == "Left":
                         self.get_logger().info('Left Hand Sign: "%s"' % asl_sign)
@@ -285,12 +286,23 @@ class HandControllerAslTwistNode(Node):
                         if asl_sign == 'R':
                           self.actionDetected = "R : Turn Right"
 
+                        action_text = '['+self.actionDetected+']'
+                        cv2.putText(annotated_image,action_text,
+                            (hand_x,hand_y*2),
+                            self.text_fontType,self.text_fontSize,
+                            hand_color,self.text_lineSize,self.text_lineType)
+ 
                     if handedness == "Right":
                         self.get_logger().info('Right Hand Sign: "%s"' % asl_sign)
 
                         # Define action
                         # ... TBD ...
 
+                        action_text = '['+self.actionDetected+']'
+                        cv2.putText(annotated_image,action_text,
+                            (hand_x,hand_y*2),
+                            self.text_fontType,self.text_fontSize,
+                            hand_color,self.text_lineSize,self.text_lineType)
                 except:
                     #print("[ERROR] Exception occured during ASL classification ...")
                     self.get_logger().warning('Exception occured during ASL Classification ...') 
