@@ -283,7 +283,7 @@ class HandControllerAslPoseNode(Node):
                         (hand_x,hand_y),
                         self.text_fontType,self.text_fontSize,
                         hand_color,self.text_lineSize,self.text_lineType)
-        
+
                     if handedness == "Left":
                         # Define action
                         if asl_sign == 'A':
@@ -317,7 +317,6 @@ class HandControllerAslPoseNode(Node):
                             (hand_x,hand_y*2),
                             self.text_fontType,self.text_fontSize,
                             hand_color,self.text_lineSize,self.text_lineType)
-
 
                         self.get_logger().info(f"{asl_text} => {action_text}")
 

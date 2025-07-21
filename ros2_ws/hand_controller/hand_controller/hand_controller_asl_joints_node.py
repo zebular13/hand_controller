@@ -337,14 +337,13 @@ class HandControllerAslJointsNode(Node):
                         if asl_sign == 'A':
                           self.actionDetected = "A : Close Gripper"
                         if asl_sign == 'B':
-                          self.actionDetected = "B : Open Gripper"                                
+                          self.actionDetected = "B : Open Gripper"
 
                         action_text = '['+self.actionDetected+']'
                         cv2.putText(annotated_image,action_text,
                             (hand_x,hand_y*2),
                             self.text_fontType,self.text_fontSize,
                             hand_color,self.text_lineSize,self.text_lineType)
-
 
                         self.get_logger().info(f"{asl_text} => {action_text}")
 
