@@ -336,9 +336,11 @@ while True:
             landmark, flag = landmarks[i], flags[i]
 
             for i in range(len(flags)):
+                flag = flags[i]
+                if flag < 0.5:
+                   continue
 
                 start = timer()
-                flag = flags[i]
                 landmark = landmarks[i]
                 handedness_score = handedness_scores[i]
                 roi_landmark = roi_landmarks[i,:,:]
@@ -369,6 +371,7 @@ while True:
                     #hand_color = (255, 0, 0) # BGR : Blue
                     hand_msg = 'RIGHT='
 
+                #print(f"Hand[{i}] flag={flag} handedness={handedness} ...")
                 #print("Hand[",i,"]")
                 #print("    handedness = ",handedness)
                 #print("    landmark = ",landmark)

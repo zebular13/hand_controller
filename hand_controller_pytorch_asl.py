@@ -342,9 +342,11 @@ while True:
             landmark, flag = landmarks[i], flags[i]
 
             for i in range(len(flags)):
+                flag = flags[i]
+                if flag < 0.5:
+                   continue
 
                 start = timer()
-                flag = flags[i]
                 landmark = landmarks[i]
                 handedness_score = handedness_scores[i]
                 roi_landmark = roi_landmarks[i,:,:]
