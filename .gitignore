@@ -4,6 +4,11 @@
 # ASL PointNet model (download with get_model.sh instead)
 asl_pointnet/*.pth
 
+# ROS2 build artifacts
+ros2_ws/hand_controller/build/
+ros2_ws/hand_controller/install/
+ros2_ws/hand_controller/log/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
