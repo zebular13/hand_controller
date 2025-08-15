@@ -24,25 +24,12 @@ def generate_launch_description():
             "blaze_model2",
             default_value="hand_landmark_lite.tflite",
             description="Name of blaze landmark model."
-        ),
-        DeclareLaunchArgument(
-            "viewer1_name",
-            default_value="Hand Controller",
-            description="Name of Image Viewer for hand_controller/annotations."
-        ),
-        #Node(
-        #    package='v4l2_camera',
-        #    executable='v4l2_camera_node',
-        #    name="usbcam_publisher",
-        #    remappings=[("image_raw", "usbcam_image")]                        
-        #),
+        ),       
         Node(
             package='hand_controller',
             executable='usbcam_publisher_node',
             name="usbcam_publisher",
-            remappings=[
-            	("image_raw", "usbcam_image")
-            ]
+            remappings=[("image_raw", "usbcam_image")]            
         ),
         Node(
             package='hand_controller',
@@ -58,23 +45,7 @@ def generate_launch_description():
             ],
             remappings=[
                ("image_raw", "usbcam_image"),
-               ("hand_controller/cmd_vel", "turtle1/cmd_vel")
-            ]
-        ),
-        Node(
-            package='hand_controller',
-            executable='usbcam_subscriber_node',
-            name="hand_controller_annotations",
-            parameters=[
-               {"viewer_name":LaunchConfiguration("viewer1_name")}
-            ],
-            remappings=[
-            	("image_raw", "hand_controller/image_annotated")
-            ]
-        ),        
-        Node(
-            package='turtlesim',
-            executable='turtlesim_node',
-            name="my_turtlesim",
+               ("hand_controller/cmd_vel", "cmd_vel")
+            ]            
         )
     ])

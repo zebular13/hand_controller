@@ -18,6 +18,11 @@ class UsbCamSubscriberNode(Node):
         )
         self.cv_bridge = CvBridge()
 
+        # Image Viewer name
+        self.declare_parameter("viewer_name", "Image Viewer")
+        self.viewer_name = self.get_parameter('viewer_name').value
+        self.get_logger().info('Image Viewer name : "%s"' % self.viewer_name)
+
     def process_video(self, msg):
         try:
             # Convert the received image message to an OpenCV format
@@ -25,7 +30,7 @@ class UsbCamSubscriberNode(Node):
 
             # Display the frame
             frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-            cv2.imshow('Video', frame_bgr)
+            cv2.imshow(self.viewer_name, frame_bgr)
             cv2.waitKey(1)
         except Exception as e:
             self.get_logger().error(f'Error processing video frame: {str(e)}')
