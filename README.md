@@ -130,15 +130,15 @@ For convenience, the package also contains the following nodes:
       - displays images with cv2.imshow
 
 
-Launch the hand_controller_asl_twist node only (requires an additional v4l2-camera or usbcam_publisher node for camera source):
-
-   - ros2 run hand_controller hand_controller_asl_twist_node
+All of the demos are partitionned in 2 parts:
+   - Part 1 can be executed on embedded hardware (without any ability to display)
+   - Part 2 is meant to be executed on a host PC with Gazebo simulation.
 
 
 
 Launch the hand_controller_asl_twist node with v4l2_camera and turtlesim nodes:
 
-   - ros2 launch hand_controller hand_controller_asl_turtlesim.launch.py
+   - ros2 launch hand_controller demo01_turtlesim_asl_part1.launch.py | ros2 launch hand_controller demo01_turtlesim_asl_part2.launch.py
 
 ![](https://github.com/AlbertaBeef/asl_mediapipe_pointnet/blob/main/images/asl_mediapipe_pointnet_demo01_ros2_turtlesim.gif)
 
@@ -148,7 +148,7 @@ Launch the hand_controller_asl_twist node with v4l2_camera and turtlesim nodes:
 
 Launch the hand_controller_asl_twist node with MOGI-ROS vehicle:
 
-   - ros2 launch hand_controller hand_controller_asl_mogiros_car.launch.py
+   - ros2 launch hand_controller demo11_mogiros_car_asl_part1.launch.py | ros2 launch hand_controller demo11_mogiros_car_asl_part2.launch.py
 
 Control Vehicle with Hand Signs
 
@@ -161,7 +161,7 @@ Control Vehicle with Hand Signs
 
 Launch the hand_controller_asl_twist node with ROSMASTER-X3 vehicle:
 
-   - ros2 launch hand_controller hand_controller_asl_rosmaster.launch.py
+   - ros2 launch demo12_rosmaster_asl_part1.launch.py | ros2 launch hand_controller demo12_rosmaster_asl_part2.launch.py
 
 Control Vehicle with Hand Signs
 
@@ -177,7 +177,7 @@ Control Vehicle with Hand Signs
 
 Launch the hand_controller_asl_pose node with MOGI-ROS simple robotic arm:
 
-   - ros2 launch hand_controller hand_controller_asl_mogiros_arm.launch.py
+   - ros2 launch hand_controller demo21_mogiros_arm_asl_part1.launch.py | ros2 launch hand_controller demo21_mogiros_arm_asl_part2.launch.py
 
 Control Robotic Arm with Left/Right Hands:
 
@@ -197,8 +197,7 @@ Control Robotic Arm with Left/Right Hands:
 
 Launch the hand_controller_asl_pose node with MYCOBOT-280 robotic arm:
 
-   - moveit &
-   - ros2 launch hand_controller hand_controller_asl_mycobot.launch.py
+   - ros2 launch hand_controller demo31_mycobot_asl_part1.launch.py | moveit | ros2 launch hand_controller demo31_mycobot_asl_part2.launch.py
 
 
 Control Robotic Arm with Hand Signs
