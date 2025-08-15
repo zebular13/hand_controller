@@ -69,14 +69,22 @@ The following dependencies are required:
 ## Stand-Alone Operation
 
 Three variations of a hand controller with mediapipe models and ASL are provided:
-- hand_controller_tflite_asl.py
-- hand_controller_pytorch_asl.py
-- hand_controller_hailo8.py
+   - hand_controller_tflite_asl.py
+   - hand_controller_pytorch_asl.py
+   - hand_controller_hailo8_asl.py
 
+To launch the ASL hand controller, using the TFLite version of blaze_app_python, invoke as follows:
+   - python3 hand_controller_tflite_asl.py
+
+![](images/hand_controller_tflite_asl.gif)
+   
 One variation of a hand controller with mediapipe models and visual dials is provided:
-- hand_controller_tflite_dials.py
+   - hand_controller_tflite_dials.py
 
+To launch the "dials" hand controller, using the TFLite version of blaze_app_python, invoke as follows:
+   - python3 hand_controller_tflite_dials.py
 
+![](images/hand_controller_tflite_dials.gif)
 
 
 
@@ -232,7 +240,7 @@ Accelerating MediaPipe:
    - Blaze Utility (python version) : [blaze_app_python](https://github.com/albertabeef/blaze_app_python)
    - Blaze Utility (C++ version) : [blaze_app_cpp](https://github.com/albertabeef/blaze_app_cpp)
 
-ASL Recognition using PointNet
-   - Medium Article [ASL recognition using pointnet and mediapipe](https://medium.com/@er_95882/asl-recognition-using-pointnet-and-mediapipe-f2efda78d089)
-   - Kaggle Dataset [asl-dataset](https://www.kaggle.com/datasets/ayuraj/asl-dataset)
+ASL Recognition using PointNet (by Edward Roe):
+   - Medium Article [ASL Recognition using PointNet and MediaPipe](https://medium.com/@er_95882/asl-recognition-using-pointnet-and-mediapipe-f2efda78d089)
+   - Kaggle Dataset [American Sign Language Dataset](https://www.kaggle.com/datasets/ayuraj/asl-dataset)
    - GitHub Source [pointnet_hands](https://github.com/e-roe/pointnet_hands/tree/main)
