@@ -2,8 +2,11 @@
 
 Hand Controller making use of MediaPipe models and ASL recognition.
 
+
 The mediapipe models are inferenced using the following python implementation:
-- 
+- Blaze Utility (python version) : [blaze_app_python](https://github.com/albertabeef/blaze_app_python)
+
+For a version using Google MediaPipe, please refer to the following alternate implementation:
 
 
 ## Cloning the repo
@@ -218,17 +221,16 @@ MOGI-ROS on-line Tutorials:
    - https://github.com/MOGI-ROS/Week-9-10-Simple-arm
 
 Accelerating MediaPipe:
-   - Hackster Series Part 1 [Blazing Fast Models](avnet.me/mediapipe-01-models)
-   - Hackster Series Part 2 [Insightful Datasets for ASL recognition](avnet.me/mediapipe-02-datasets)
-   - Hackster Series Part 3 [Accelerating the MediaPipe models with Vitis-AI 3.5](avnet.me/mediapipe-03-vitis-ai-3.5)
-   - Hackster Series Part 4 [Accelerating the MediaPipe models with Hailo-8](avnet.me/mediapipe-04-Hailo-8)
-   - Hackster Series Part 5 [Accelerating the MediaPipe models on RPI5 AI Kit](avnet.me/mediapipe-05-rpi5aikit)
-   - Hackster Series Part 6 [Accelerating the MediaPipe models with MemryX](avnet.me/mediapipe-06-memryx)
-   - Blaze Utility (python version) : [blaze_app_python](github.com/albertabeef/blaze_app_python)
-   - Blaze Utility (C++ version) : [blaze_app_cpp](github.com/albertabeef/blaze_app_cpp)
-
+   - Hackster Series Part 1 [Blazing Fast Models](https://avnet.me/mediapipe-01-models)
+   - Hackster Series Part 2 [Insightful Datasets for ASL recognition](https://avnet.me/mediapipe-02-datasets)
+   - Hackster Series Part 3 [Accelerating the MediaPipe models with Vitis-AI 3.5](https://avnet.me/mediapipe-03-vitis-ai-3.5)
+   - Hackster Series Part 4 [Accelerating the MediaPipe models with Hailo-8](https://avnet.me/mediapipe-04-Hailo-8)
+   - Hackster Series Part 5 [Accelerating the MediaPipe models on RPI5 AI Kit](https://avnet.me/mediapipe-05-rpi5aikit)
+   - Hackster Series Part 6 [Accelerating the MediaPipe models with MemryX](https://avnet.me/mediapipe-06-memryx)
+   - Blaze Utility (python version) : [blaze_app_python](https://github.com/albertabeef/blaze_app_python)
+   - Blaze Utility (C++ version) : [blaze_app_cpp](https://github.com/albertabeef/blaze_app_cpp)
 
 ASL Recognition using PointNet
-   - Article [Medium](https://medium.com/@er_95882/asl-recognition-using-pointnet-and-mediapipe-f2efda78d089)
-   - Dataset [Kaggle](https://www.kaggle.com/datasets/ayuraj/asl-dataset)
-   - Source [Github](https://github.com/e-roe/pointnet_hands/tree/main)
+   - Medium Article [ASL recognition using pointnet and mediapipe](https://medium.com/@er_95882/asl-recognition-using-pointnet-and-mediapipe-f2efda78d089)
+   - Kaggle Dataset [asl-dataset](https://www.kaggle.com/datasets/ayuraj/asl-dataset)
+   - GitHub Source [pointnet_hands](https://github.com/e-roe/pointnet_hands/tree/main)
