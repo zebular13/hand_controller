@@ -4,9 +4,11 @@ Hand Controller making use of MediaPipe models and ASL recognition.
 
 
 The mediapipe models are inferenced using the following python implementation:
-- Blaze Utility (python version) : [blaze_app_python](https://github.com/albertabeef/blaze_app_python)
+   - Blaze Utility (python version) : [blaze_app_python](https://github.com/albertabeef/blaze_app_python)
 
 For a version using Google MediaPipe, please refer to the following alternate implementation:
+   - ASL MediaPipe PointNet : [asl_mediapipe_pointnet](https://github.com/albertabeef/asl_mediapipe_pointnet)
+
 
 
 ## Cloning the repo
