@@ -136,7 +136,7 @@ All of the demos are partitionned in 2 parts:
 
 
 
-Launch the hand_controller_asl_twist node with v4l2_camera and turtlesim nodes:
+Launch the hand_controller_asl_twist node with usbcam_publisher and turtlesim nodes:
 
    - ros2 launch hand_controller demo01_turtlesim_asl_part1.launch.py | ros2 launch hand_controller demo01_turtlesim_asl_part2.launch.py
 
@@ -161,7 +161,7 @@ Control Vehicle with Hand Signs
 
 Launch the hand_controller_asl_twist node with ROSMASTER-X3 vehicle:
 
-   - ros2 launch demo12_rosmaster_asl_part1.launch.py | ros2 launch hand_controller demo12_rosmaster_asl_part2.launch.py
+   - ros2 launch hand_controller demo12_rosmaster_asl_part1.launch.py | ros2 launch hand_controller demo12_rosmaster_asl_part2.launch.py
 
 Control Vehicle with Hand Signs
 
