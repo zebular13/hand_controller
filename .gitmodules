@@ -1,4 +1,4 @@
 [submodule "blaze_app_python"]
 	path = blaze_app_python
 	url = https://github.com/AlbertaBeef/blaze_app_python
-	branch = handedness
+	branch = main
