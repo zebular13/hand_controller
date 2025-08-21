@@ -17,17 +17,14 @@ limitations under the License.
 #   https://github.com/ljkeller/visual_control/blob/master/proto.py
 #
 # References:
-#   https://www.github.com/AlbertaBeef/blaze_app_python
-#   https://www.github.com/AlbertaBeef/asl_mediapipe_pointnet
+#   https://studio.edgeimpulse.com/studio/726391
 #
 # Dependencies:
-#   TFLite
-#      tensorflow
-#    or
-#      tflite_runtime
+#   Edge Impulse
+#      edge_impulse_linux
 #
 
-app_name = "hand_controller_tflite_dials"
+app_name = "hand_controller_eifomo_dials"
 
 import numpy as np
 import cv2
@@ -57,20 +54,12 @@ print("[INFO] user@hosthame : ",user_host_descriptor)
 
 sys.path.append(os.path.abspath('blaze_app_python/'))
 sys.path.append(os.path.abspath('blaze_app_python/blaze_common/'))
-sys.path.append(os.path.abspath('blaze_app_python/blaze_tflite/'))
-#sys.path.append(os.path.abspath('blaze_app_python/blaze_pytorch/'))
-#sys.path.append(os.path.abspath('blaze_app_python/blaze_vitisai/'))
-#sys.path.append(os.path.abspath('blaze_app_python/blaze_hailo/'))
 
-from blaze_tflite.blazedetector import BlazeDetector as BlazeDetector_tflite
-from blaze_tflite.blazelandmark import BlazeLandmark as BlazeLandmark_tflite
-
-from visualization import draw_detections, draw_landmarks, draw_roi
-from visualization import HAND_CONNECTIONS, FACE_CONNECTIONS, POSE_FULL_BODY_CONNECTIONS, POSE_UPPER_BODY_CONNECTIONS
-from visualization import draw_detection_scores
 from visualization import draw_stacked_bar_chart, stacked_bar_performance_colors
 from visualization import tria_blue, tria_yellow, tria_pink, tria_aqua
 from utils_linux import get_media_dev_by_name, get_video_dev_by_name
+
+from edge_impulse_linux.image import ImageImpulseRunner
 
 from timeit import default_timer as timer
 
@@ -81,13 +70,9 @@ CAMERA_HEIGHT = 480
 
 stacked_bar_latency_colors = [
     tria_blue  , # resize
-    tria_yellow, # detector_pre
-    tria_pink  , # detector_model
-    tria_aqua  , # detector_post
-    tria_blue  , # extract_roi
-    tria_yellow, # landmark_pre
-    tria_pink  , # landmark_model
-    tria_aqua  , # landmark_post
+    tria_yellow, # fomo_pre
+    tria_pink  , # fomo_model
+    tria_aqua  , # fomo_post
     tria_blue  , # annotate
     tria_yellow, # dials
 ]
@@ -187,30 +172,9 @@ if os.path.isfile(profile_csv):
 else:
     f_profile_csv = open(profile_csv, "w")
     print("[INFO] Creating new profiling results file :",profile_csv)
-    f_profile_csv.write("time,user,hostname,pipeline,detection-qty,resize,detector_pre,detector_model,detector_post,extract_roi,landmark_pre,landmark_model,landmark_post,annotate,dials,total,fps\n")
+    f_profile_csv.write("time,user,hostname,pipeline,detection-qty,resize,fomo_pre,fomo_model,fomo_post,annotate,dials,total,fps\n")
 
 pipeline = app_name
-detector_type = "blazepalm"
-landmark_type = "blazehandlandmark"
-
-model1 = "blaze_app_python/blaze_tflite/models/palm_detection_lite.tflite"
-blaze_detector = BlazeDetector_tflite(detector_type)
-blaze_detector.set_debug(debug=args.verbose)
-blaze_detector.load_model(model1)
- 
-model2 = "blaze_app_python/blaze_tflite/models/hand_landmark_lite.tflite"
-blaze_landmark = BlazeLandmark_tflite(landmark_type)
-blaze_landmark.set_debug(debug=args.verbose)
-blaze_landmark.load_model(model2)
-
-thresh_min_score = blaze_detector.min_score_thresh
-thresh_min_score_prev = thresh_min_score
-
-thresh_nms = blaze_detector.min_suppression_threshold
-thresh_nms_prev = thresh_nms
-
-thresh_confidence = 0.5
-thresh_confidence_prev = thresh_confidence
 
 # Visual Control Dials
 
@@ -300,7 +264,7 @@ def draw_control_overlay(img, lh_data=None, rh_data=None):
        
         
 print("================================================================")
-print("Hand Controller (TFLite) with Dials")
+print("Hand Controller (Edge Impulse) with Dials")
 print("================================================================")
 print("\tPress ESC to quit ...")
 print("----------------------------------------------------------------")
@@ -310,10 +274,6 @@ print("\tPress 's' to step one frame at a time ...")
 print("\tPress 'w' to take a photo ...")
 print("----------------------------------------------------------------")
 print("\tPress 'h' to toggle horizontal mirror on input")
-print("\tPress 'a' to toggle detection overlay on/off")
-print("\tPress 'b' to toggle roi overlay on/off")
-print("\tPress 'l' to toggle landmarks overlay on/off")
-print("\tPress 'e' to toggle scores image on/off")
 print("\tPress 'f' to toggle FPS display on/off")
 print("\tPress 'v' to toggle verbose on/off")
 print("\tPress 'z' to toggle profiling log on/off")
@@ -324,10 +284,6 @@ bStep = False
 bPause = False
 bWrite = False
 bMirrorImage = True
-bShowDetection = False
-bShowExtractROI = False
-bShowLandmarks = True
-bShowScores = False
 bShowFPS = args.fps
 bVerbose = args.verbose
 bViewOutput = not args.withoutview
@@ -342,15 +298,8 @@ def ignore(x):
 if bViewOutput:
     app_main_title = "Hand Controller Demo"
     app_ctrl_title = "Hand Controller Demo"
-    app_scores_title = "Palm Detection - Detection Scores (sigmoid)"
 
     cv2.namedWindow(app_main_title)
-
-    cv2.createTrackbar('threshMinScore', app_ctrl_title, int(thresh_min_score*100), 100, ignore)
-
-    cv2.createTrackbar('threshNMS', app_ctrl_title, int(thresh_nms*100), 100, ignore)
-
-    cv2.createTrackbar('threshConfidence', app_ctrl_title, int(thresh_confidence*100), 100, ignore)
 
 image = []
 output = []
@@ -366,7 +315,25 @@ rt_fps_message = "FPS: {0:.2f}".format(rt_fps)
 rt_fps_x = int(10*scale)
 rt_fps_y = int((frame_height-10)*scale)
 
-while True:
+modelfile = "./ei_fomo_face_hands_float32.eim"
+if bVerbose:
+    print("[INFO] model= ",modelfile)
+
+with ImageImpulseRunner(modelfile) as runner:
+ try:
+  model_info = runner.init()
+  if bVerbose:
+      # displays WAY TOO MUCH verbose ... :( ...
+      #model_info = runner.init(debug=True) # to get debug print out
+
+      print('[INFO] Loaded runner for "' + model_info['project']['owner'] + ' / ' + model_info['project']['name'] + '"')
+      
+  labels = model_info['model_parameters']['labels'] 
+  if bVerbose:
+      print("[INFO] labels = ",labels)
+ 
+  while True:
+  
     # init the real-time FPS counter
     if rt_fps_count == 0:
         rt_fps_time = cv2.getTickCount()
@@ -394,38 +361,11 @@ while True:
         # Mirror horizontally for selfie-mode
         frame = cv2.flip(frame, 1)        
         
-    # Get trackbar values
-    if bViewOutput:
-        thresh_min_score = cv2.getTrackbarPos('threshMinScore', app_ctrl_title)
-        if thresh_min_score < 10:
-            thresh_min_score = 10
-            cv2.setTrackbarPos('threshMinScore', app_ctrl_title,thresh_min_score)
-        thresh_min_score = thresh_min_score*(1/100)
-        if thresh_min_score != thresh_min_score_prev:
-            blaze_detector.min_score_thresh = thresh_min_score
-            thresh_min_score_prev = thresh_min_score
-            print("[INFO] thresh_min_score=",thresh_min_score)
-
-        thresh_nms = cv2.getTrackbarPos('threshNMS', app_ctrl_title)
-        if thresh_nms > 99:
-            thresh_nms = 99
-            cv2.setTrackbarPos('threshNMS', app_ctrl_title,thresh_nms)
-        thresh_nms = thresh_nms*(1/100)
-        if thresh_nms != thresh_nms_prev:
-            blaze_detector.min_suppression_threshold = thresh_nms
-            thresh_nms_prev = thresh_nms
-            print("[INFO] thresh_nms=",thresh_nms)
-
-        thresh_confidence = cv2.getTrackbarPos('threshConfidence', app_ctrl_title)
-        thresh_confidence = thresh_confidence*(1/100)
-        if thresh_confidence != thresh_confidence_prev:
-            thresh_confidence_prev = thresh_confidence
-            print("[INFO] thresh_confidence=",thresh_confidence)
 
     #image = cv2.resize(frame,(0,0), fx=scale, fy=scale) 
     image = frame
     output = image.copy()
-
+    
     #            
     # Visual Control Dials (init hand data)
     #
@@ -437,13 +377,10 @@ while True:
     #
 
     profile_resize         = 0
-    profile_detector_pre   = 0
-    profile_detector_model = 0
-    profile_detector_post  = 0
-    profile_extract_roi    = 0
-    profile_landmark_pre   = 0
-    profile_landmark_model = 0
-    profile_landmark_post  = 0
+    profile_fomo_qty       = 0
+    profile_fomo_pre       = 0
+    profile_fomo_model     = 0
+    profile_fomo_post      = 0
     profile_annotate       = 0
     profile_dials          = 0
     #
@@ -455,90 +392,143 @@ while True:
 
 
     #            
-    # BlazePalm pipeline
+    # EdgeImpulse FOMO pipeline
     #
     
+    # Create square images for left | right sides
     start = timer()
     image = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
-    img1,scale1,pad1=blaze_detector.resize_pad(image)
+    image_size = min(CAMERA_WIDTH,CAMERA_HEIGHT)
+    image_overlap = int(image_size - (CAMERA_WIDTH/2))
+    #print("[INFO] image.shape = ",image.shape )
+    #print("[INFO] image_size = ",image_size )
+    #print("[INFO] image_overlap = ",image_overlap )
+    # [INFO] image.shape =  (480, 640, 3)
+    # [INFO] image_size =  480
+    # [INFO] image_overlap =  160
+    image_l = image[:,0:image_size,:].copy()
+    image_r = image[:,(CAMERA_WIDTH-image_size-1):-1,:].copy()
+    #print("[INFO] image_l.shape = ",image_l.shape )
+    #print("[INFO] image_r.shape = ",image_r.shape )
+    # [INFO] image_l.shape =  (480, 480, 3)
+    # [INFO] image_r.shape =  (480, 480, 3)
+    # blank out overlapping portions
+    image_l[:,(image_size-image_overlap-1):-1,:] = 0
+    image_r[:,0:(image_overlap),:] = 0
+    # resize to FOMO input size
+    cropped_size = 160
+    image_l = cv2.resize(image_l,(cropped_size,cropped_size))
+    image_r = cv2.resize(image_r,(cropped_size,cropped_size))    
+    #print("[INFO] image_l.shape = ",image_l.shape )
+    #print("[INFO] image_r.shape = ",image_r.shape )
+    # [INFO] image_l.shape =  (160, 160, 3)
+    # [INFO] image_r.shape =  (160, 160, 3)
     profile_resize = timer()-start
 
-    normalized_detections = blaze_detector.predict_on_image(img1)
+    # generate features
+    start = timer()
+    features_l, cropped_l = runner.get_features_from_image(image_l)
+    features_r, cropped_r = runner.get_features_from_image(image_r)
+    cropped_l = cv2.cvtColor(cropped_l,cv2.COLOR_RGB2BGR)
+    cropped_r = cv2.cvtColor(cropped_r,cv2.COLOR_RGB2BGR)
+    profile_fomo_pre = timer()-start
+    
+    # detection objects (FOMO)
+    start = timer()
+    res_l = runner.classify(features_l)
+    res_r = runner.classify(features_r)
+    profile_fomo_model = timer()-start
 
-    if bShowScores:
-        detection_scores_chart = draw_detection_scores( blaze_detector.detection_scores, blaze_detector.min_score_thresh );
-        cv2.imshow(app_scores_title,detection_scores_chart);
+    #print("[INFO] res_l = ",res_l["result"].keys() )
+    #print("[INFO] res_r = ",res_r["result"].keys() )    
+    # [INFO] res_l =  dict_keys(['bounding_boxes'])
+    # [INFO] res_r =  dict_keys(['bounding_boxes'])
+        
+    profile_fomo_qty = len(res_l)+len(res_r)
 
-    if len(normalized_detections) > 0:
-  
-        start = timer()          
-        detections = blaze_detector.denormalize_detections(normalized_detections,scale1,pad1)
-                    
-        xc,yc,scale,theta = blaze_detector.detection2roi(detections)
-        roi_img,roi_affine,roi_box = blaze_landmark.extract_roi(image,xc,yc,theta,scale)
-        profile_extract_roi = timer()-start
-
-        results = blaze_landmark.predict(roi_img)
-        #flags, normalized_landmarks = results
-        flags, normalized_landmarks, handedness_scores = results
-                    
-        roi_landmarks = normalized_landmarks.copy()
-                
-        start = timer() 
-        landmarks = blaze_landmark.denormalize_landmarks(normalized_landmarks, roi_affine)
-
-        for i in range(len(flags)):
-            landmark, flag = landmarks[i], flags[i]
-
-            if bShowLandmarks == True:
-                draw_landmarks(output, landmark[:,:2], HAND_CONNECTIONS, thickness=2, radius=4)
-                   
-        if bShowExtractROI == True:
-            draw_roi(output,roi_box)
-        if bShowDetection == True:
-            draw_detections(output,detections)
-        profile_annotate = timer()-start
+    if profile_fomo_qty > 0:
 
         #
         # Visual Control Dials (prepare hand data)
         # 
 
-        start = timer()
-        for i in range(len(flags)):
-            landmark, flag = landmarks[i], flags[i]
+        # Process left side
+        if "bounding_boxes" in res_l["result"].keys():
+            if bVerbose:
+                print('Found %d bounding boxes (%f ms, %f ms)' % (len(res_l["result"]["bounding_boxes"]), res_l['timing']['dsp'], res_l['timing']['classification']))
 
-            for i in range(len(flags)):
-                flag = flags[i]
-                if flag < 0.5:
-                   continue
-
-                landmark = landmarks[i]
-                handedness_score = handedness_scores[i]
-                roi_landmark = roi_landmarks[i,:,:]
+            for bb in res_l["result"]["bounding_boxes"]:
+                if bVerbose:
+                    print('\t%s (%.2f): x=%d y=%d w=%d h=%d' % (bb['label'], bb['value'], bb['x'], bb['y'], bb['width'], bb['height']))
                 
-                #print("[INFO] landmark=",landmark)
-                        
-                if bMirrorImage == True:
-                    if handedness_score >= 0.5:
-                        handedness = "Left"
-                    else:
-                        handedness = "Right"
-                else:                               
-                    if handedness_score < 0.5:
-                        handedness = "Left"
-                    else:
-                        handedness = "Right"
+                if bb['label'] == 'face':
+                    continue
+                    
+                if bb['label'] == 'open':    
+                    cropped_l = cv2.rectangle(cropped_l, (bb['x'], bb['y']), (bb['x'] + bb['width'], bb['y'] + bb['height']), (0, 255, 0), 2)
+                if bb['label'] == 'closed':    
+                    cropped_l = cv2.rectangle(cropped_l, (bb['x'], bb['y']), (bb['x'] + bb['width'], bb['y'] + bb['height']), (0, 0, 255), 2)
 
                 # Visual Control Dials (prepare hand data)
-                if handedness == "Left":
-                    lh_data = HandData(handedness, landmark)
-                else:
-                    rh_data = HandData(handedness, landmark)
+                start = timer()    
+                handedness = "Left"
+                x1 = (bb['x'] / cropped_size) * image_size
+                y1 = (bb['y'] / cropped_size) * image_size
+                z1 = 0.0
+                x2 = ((bb['x'] + bb['width']) / 160) * image_size
+                y2 = ((bb['y'] + bb['height']) / 160) * image_size
+                z2 = 0.0
+                landmarks = np.asarray([[x1,y1,z1],[x2,y2,z2]])
+                lh_data = HandData(handedness, landmarks)
+                profile_dials += timer()-start
+
+                if bb['label'] == 'open':
+                    output = cv2.rectangle(output, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
+                if bb['label'] == 'closed':    
+                    output = cv2.rectangle(output, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 2)
+
+        # Process right side
+        if "bounding_boxes" in res_r["result"].keys():
+            if bVerbose:
+                print('Found %d bounding boxes (%f ms, %f ms)' % (len(res_r["result"]["bounding_boxes"]), res_r['timing']['dsp'], res_r['timing']['classification']))
+
+            for bb in res_r["result"]["bounding_boxes"]:
+                if bVerbose:
+                    print('\t%s (%.2f): x=%d y=%d w=%d h=%d' % (bb['label'], bb['value'], bb['x'], bb['y'], bb['width'], bb['height']))
+
+                if bb['label'] == 'open':    
+                    cropped_r = cv2.rectangle(cropped_r, (bb['x'], bb['y']), (bb['x'] + bb['width'], bb['y'] + bb['height']), (0, 255, 0), 2)
+                if bb['label'] == 'closed':    
+                    cropped_r = cv2.rectangle(cropped_r, (bb['x'], bb['y']), (bb['x'] + bb['width'], bb['y'] + bb['height']), (0, 0, 255), 2)
+                
+                # Visual Control Dials (prepare hand data)
+                start = timer()    
+                handedness = "Right"
+                x1 = CAMERA_WIDTH - image_size + (bb['x'] / cropped_size) * image_size
+                y1 = (bb['y'] / cropped_size) * image_size
+                z1 = 0.0
+                x2 = CAMERA_WIDTH - image_size + ((bb['x'] + bb['width']) / cropped_size) * image_size
+                y2 = ((bb['y'] + bb['height']) / cropped_size) * image_size
+                z2 = 0.0
+                landmarks = np.asarray([[x1,y1,z1],[x2,y2,z2]])
+                rh_data = HandData(handedness, landmarks)
+                profile_dials += timer()-start
+
+                if bb['label'] == 'open':
+                    output = cv2.rectangle(output, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
+                if bb['label'] == 'closed':    
+                    output = cv2.rectangle(output, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 2)
+                
+    cropped_output = cv2.hconcat([cropped_l,cropped_r])
+    #print("[INFO] cropped_output.shape = ",cropped_output.shape )
+    # [INFO] cropped_output.shape =  (160, 320, 3)
+    cropped_output[:,cropped_size:cropped_size+1] = tria_aqua # create middle bondary
+    cv2.imshow('FOMO input (left|right)', cropped_output)
 
     # Visual Control Dials (display dials)
+    start = timer()    
     draw_control_overlay(output, lh_data, rh_data)
-
-    profile_dials = timer()-start
+    profile_dials += timer()-start
 
     # display real-time FPS counter (if valid)
     if rt_fps_valid == True and bShowFPS:
@@ -549,25 +539,15 @@ while True:
     #
     # Profiling
     #
-    profile_detector_pre   = blaze_detector.profile_pre
-    profile_detector_model = blaze_detector.profile_model
-    profile_detector_post  = blaze_detector.profile_post
-    profile_detector = profile_detector_pre + profile_detector_model + profile_detector_post
-    if len(normalized_detections) > 0:
-        profile_landmark_pre   = blaze_landmark.profile_pre
-        profile_landmark_model = blaze_landmark.profile_model
-        profile_landmark_post  = blaze_landmark.profile_post
-    profile_landmark = profile_landmark_pre + profile_landmark_model + profile_landmark_post
+    profile_fomo = profile_fomo_pre + profile_fomo_model + profile_fomo_post
     profile_total = profile_resize + \
-                    profile_detector + \
-                    profile_extract_roi + \
-                    profile_landmark + \
+                    profile_fomo + \
                     profile_annotate + \
                     profile_dials
     profile_fps = 1.0 / profile_total
     if bProfileLog == True:
         # display profiling results to console
-        print(f"[PROFILING] hands={len(normalized_detections)}, FPS={profile_fps:.3f}fps, Total={profile_total*1000:.3f}ms, Detection={profile_detector*1000:.3f}ms, Extract={profile_extract_roi*1000:.3f}ms, Landmark={profile_landmark*1000:.3f}ms, Annotate={profile_annotate*1000:.3f}ms, DIALS={profile_dials*1000:.3f}ms")
+        print(f"[PROFILING] fomo_qty={profile_fomo_qty}, FPS={profile_fps:.3f}fps, Total={profile_total*1000:.3f}ms, FOMO={profile_fomo*1000:.3f}ms, Annotate={profile_annotate*1000:.3f}ms, DIALS={profile_dials*1000:.3f}ms")
         # write profiling results to csv file
         timestamp = datetime.now()
         csv_str = \
@@ -575,15 +555,11 @@ while True:
             str(user)+","+\
             str(host)+","+\
             pipeline+","+\
-            str(len(normalized_detections))+","+\
+            str(profile_fomo_qty)+","+\
             str(profile_resize)+","+\
-            str(profile_detector_pre)+","+\
-            str(profile_detector_model)+","+\
-            str(profile_detector_post)+","+\
-            str(profile_extract_roi)+","+\
-            str(profile_landmark_pre)+","+\
-            str(profile_landmark_model)+","+\
-            str(profile_landmark_post)+","+\
+            str(profile_fomo_pre)+","+\
+            str(profile_fomo_model)+","+\
+            str(profile_fomo_post)+","+\
             str(profile_annotate)+","+\
             str(profile_dials)+","+\
             str(profile_total)+","+\
@@ -615,26 +591,18 @@ while True:
         #
         component_labels = [
             "resize",
-            "detector[pre]",
-            "detector[model]",
-            "detector[post]",
-            "extract_roi",
-            "landmark[pre]",
-            "landmark[model]",
-            "landmark[post]",
+            "fomo[pre]",
+            "fomo[model]",
+            "fomo[post]",
             "annotate",
             "dials"
         ]
         pipeline_titles = [app_name]
         component_values=[
             [profile_resize],
-            [profile_detector_pre],
-            [profile_detector_model],
-            [profile_detector_post],
-            [profile_extract_roi],
-            [profile_landmark_pre],
-            [profile_landmark_model],
-            [profile_landmark_post],
+            [profile_fomo_pre],
+            [profile_fomo_model],
+            [profile_fomo_post],
             [profile_annotate],
             [profile_dials]
         ]
@@ -712,32 +680,12 @@ while True:
         bMirrorImage = not bMirrorImage  
         print("[INFO] bMirrorImage=",bMirrorImage)
 
-    if key == 97: # 'a'
-        bShowDetection = not bShowDetection  
-        print("[INFO] bShowDetection=",bShowDetection)
-
-    if key == 98: # 'b'
-        bShowExtractROI = not bShowExtractROI  
-        print("[INFO] bShowExtractROI=",bShowExtractROI)
-
-    if key == 108: # 'l'
-        bShowLandmarks = not bShowLandmarks
-        print("[INFO] bShowLandmarks=",bShowLandmarks)             
-                
-    if key == 101: # 'e'
-        bShowScores = not bShowScores
-        print("[INFO] bShowScores=",bShowScores)
-        if not bShowScores:
-           cv2.destroyWindow(app_scores_title)
-
     if key == 102: # 'f'
         bShowFPS = not bShowFPS
         print("[INFO] bShowFPS=",bShowFPS)
 
     if key == 118: # 'v'
         bVerbose = not bVerbose
-        blaze_detector.set_debug(debug=bVerbose) 
-        blaze_landmark.set_debug(debug=bVerbose)
         print("[INFO] Verbose = ",bVerbose)
 
     if key == 122: # 'z'
@@ -747,8 +695,6 @@ while True:
     if key == 121: # 'y'
         bProfileView = not bProfileView 
         print("[INFO] bProfileView=",bProfileView)
-        blaze_detector.set_profile(profile=bProfileView) 
-        blaze_landmark.set_profile(profile=bProfileView)
         if not bProfileView:
             cv2.destroyWindow(profile_latency_title)
             cv2.destroyWindow(profile_performance_title)
@@ -766,6 +712,10 @@ while True:
         #print("[INFO] ",rt_fps_message)
         rt_fps_count = 0
 
+ finally:
+    if (runner):
+        runner.stop()
+        
 # Cleanup
 f_profile_csv.close()
 cv2.destroyAllWindows()
