@@ -74,7 +74,10 @@ from utils_linux import get_media_dev_by_name, get_video_dev_by_name
 
 from timeit import default_timer as timer
 
-
+CAMERA_WIDTH = 640
+CAMERA_HEIGHT = 480
+#CAMERA_WIDTH = 1280
+#CAMERA_HEIGHT = 720
 
 stacked_bar_latency_colors = [
     tria_blue  , # resize
@@ -150,8 +153,8 @@ if bInputCamera == True:
 
     # Open video
     cap = cv2.VideoCapture(input_video)
-    frame_width = 640
-    frame_height = 480
+    frame_width = CAMERA_WIDTH
+    frame_height = CAMERA_HEIGHT
     cap.set(cv2.CAP_PROP_FRAME_WIDTH,frame_width)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT,frame_height)
     #frame_width = int(round(cap.get(cv2.CAP_PROP_FRAME_WIDTH)))
@@ -184,7 +187,7 @@ if os.path.isfile(profile_csv):
 else:
     f_profile_csv = open(profile_csv, "w")
     print("[INFO] Creating new profiling results file :",profile_csv)
-    f_profile_csv.write("time,user,hostname,pipeline,detections,resize,detector_pre,detector_model,detector_post,extract_roi,landmark_pre,landmark_model,landmark_post,annotate,dials,total,fps\n")
+    f_profile_csv.write("time,user,hostname,pipeline,detection-qty,resize,detector_pre,detector_model,detector_post,extract_roi,landmark_pre,landmark_model,landmark_post,annotate,dials,total,fps\n")
 
 pipeline = app_name
 detector_type = "blazepalm"
@@ -211,16 +214,12 @@ thresh_confidence_prev = thresh_confidence
 
 # Visual Control Dials
 
-CAMERA_WIDTH = 640
-CAMERA_HEIGHT = 480
-
 CV_DRAW_COLOR_PRIMARY = (255, 255, 0)
 
 CONTROL_CIRCLE_DEADZONE_R = 50
 
 CONTROL_CIRCLE_XY_CENTER = (int(CAMERA_WIDTH/4), int(CAMERA_HEIGHT/2))
-CONTROL_CIRCLE_Z_APERATURE_CENTER = (
-    int(3*CAMERA_WIDTH/4), int(CAMERA_HEIGHT/2))
+CONTROL_CIRCLE_Z_APERATURE_CENTER = (int(3*CAMERA_WIDTH/4), int(CAMERA_HEIGHT/2))
 
 
 @dataclass
@@ -245,10 +244,6 @@ class HandData:
         
         self.center_perc = (x_avg, y_avg, z_avg)
         #print(f"center_perc: {self.center_perc}")
-
-def lerp(a, b, t):
-    return a(b-a)*t
-
 
 def draw_control_overlay(img, lh_data=None, rh_data=None):
     # Draw control circle for XY control (left hand)
@@ -520,6 +515,8 @@ while True:
                 landmark = landmarks[i]
                 handedness_score = handedness_scores[i]
                 roi_landmark = roi_landmarks[i,:,:]
+                
+                #print("[INFO] landmark=",landmark)
                         
                 if bMirrorImage == True:
                     if handedness_score >= 0.5:
