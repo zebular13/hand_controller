@@ -87,6 +87,7 @@ text_lineType = cv2.LINE_AA
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument('-i', '--input'      , type=str, default="", help="Video input device. Default is auto-detect (first usbcam)")
+ap.add_argument('-m', '--model'      , type=str, default="./ei_fomo_face_hands_float32.eim", help='Path of Edge Impulse FOMO model. Default is ./ei_fomo_face_hands_float32.eim')
 ap.add_argument('-v', '--verbose'    , default=False, action='store_true', help="Enable Verbose mode. Default is off")
 ap.add_argument('-w', '--withoutview', default=False, action='store_true', help="Disable Output viewing. Default is on")
 ap.add_argument('-z', '--profilelog' , default=False, action='store_true', help="Enable Profile Log (Latency). Default is off")
@@ -97,6 +98,7 @@ args = ap.parse_args()
   
 print('Command line options:')
 print(' --input       : ', args.input)
+print(' --model       : ', args.model)
 print(' --verbose     : ', args.verbose)
 print(' --withoutview : ', args.withoutview)
 print(' --profilelog  : ', args.profilelog)
@@ -315,7 +317,7 @@ rt_fps_message = "FPS: {0:.2f}".format(rt_fps)
 rt_fps_x = int(10*scale)
 rt_fps_y = int((frame_height-10)*scale)
 
-modelfile = "./ei_fomo_face_hands_float32.eim"
+modelfile = args.model
 if bVerbose:
     print("[INFO] model= ",modelfile)
 
