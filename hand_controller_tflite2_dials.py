@@ -543,7 +543,7 @@ while True:
     if lh_data:
         cv2.circle(output, (int(lh_data.center_perc[0]*CAMERA_WIDTH), int(lh_data.center_perc[1]*CAMERA_HEIGHT)), radius=10, color=tria_pink, thickness=-1)  
     if rh_data:
-        cv2.circle(output, (int(rh_data.center_perc[0]*CAMERA_WIDTH), int(rh_data.center_perc[1]*CAMERA_HEIGHT)), radius=10, color=tria_pink, thickness=-1)   
+        cv2.circle(output, (int(rh_data.center_perc[0]*CAMERA_WIDTH), int(rh_data.center_perc[1]*CAMERA_HEIGHT)), radius=10, color=tria_pink, thickness=-1)
     draw_control_overlay(output, lh_data, rh_data)
     profile_dials += timer()-start
 
@@ -654,7 +654,7 @@ while True:
         )
 
         # Display or process the image using OpenCV or any other library
-        if bViewOutput:        
+        if bViewOutput:
             cv2.imshow(profile_latency_title, profile_latency_chart)                         
 
         if bWrite:
@@ -763,6 +763,12 @@ while True:
             cv2.destroyWindow(profile_performance_title)
 
     if key == 27 or key == 113: # ESC or 'q':
+        break
+
+    # automated test/profiling mode
+    if not bViewOutput and frame_count==100:
+        bWrite = True
+    if not bViewOutput and frame_count==101:
         break
 
     # Update the real-time FPS counter
