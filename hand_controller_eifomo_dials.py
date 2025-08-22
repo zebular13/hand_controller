@@ -523,7 +523,8 @@ with ImageImpulseRunner(modelfile) as runner:
     #print("[INFO] cropped_output.shape = ",cropped_output.shape )
     # [INFO] cropped_output.shape =  (160, 320, 3)
     cropped_output[:,cropped_size:cropped_size+1] = tria_aqua # create middle bondary
-    cv2.imshow('FOMO input (left|right)', cropped_output)
+    if bViewOutput:    
+        cv2.imshow('FOMO input (left|right)', cropped_output)
 
     # Visual Control Dials (display dials)
     start = timer()
@@ -587,6 +588,10 @@ with ImageImpulseRunner(modelfile) as runner:
         filename = ("%s_frame%04d_annotations.tif"%(app_name,frame_count))
         print("Capturing ",filename," ...")
         cv2.imwrite(os.path.join(output_dir,filename),output)
+
+        filename = ("%s_frame%04d_debug.tif"%(app_name,frame_count))
+        print("Capturing ",filename," ...")
+        cv2.imwrite(os.path.join(output_dir,filename),cropped_output)
         
 
     if bProfileView:
@@ -619,7 +624,8 @@ with ImageImpulseRunner(modelfile) as runner:
         )
 
         # Display or process the image using OpenCV or any other library
-        cv2.imshow(profile_latency_title, profile_latency_chart)                         
+        if bViewOutput:
+            cv2.imshow(profile_latency_title, profile_latency_chart)                         
 
         if bWrite:
             filename = ("%s_frame%04d_profiling_latency.png"%(app_name,frame_count))
@@ -645,7 +651,8 @@ with ImageImpulseRunner(modelfile) as runner:
         )
 
         # Display or process the image using OpenCV or any other library
-        cv2.imshow(profile_performance_title, profile_performance_chart)                         
+        if bViewOutput:
+            cv2.imshow(profile_performance_title, profile_performance_chart)                         
 
         if bWrite:
             filename = ("%s_frame%04d_profiling_performance.png"%(app_name,frame_count))

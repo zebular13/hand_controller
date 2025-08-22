@@ -467,7 +467,8 @@ while True:
 
     if bShowScores:
         detection_scores_chart = draw_detection_scores( blaze_detector.detection_scores, blaze_detector.min_score_thresh );
-        cv2.imshow(app_scores_title,detection_scores_chart);
+        if bViewOutput:        
+            cv2.imshow(app_scores_title,detection_scores_chart);
 
     if len(normalized_detections) > 0:
   
@@ -653,7 +654,8 @@ while True:
         )
 
         # Display or process the image using OpenCV or any other library
-        cv2.imshow(profile_latency_title, profile_latency_chart)                         
+        if bViewOutput:        
+            cv2.imshow(profile_latency_title, profile_latency_chart)                         
 
         if bWrite:
             filename = ("%s_frame%04d_profiling_latency.png"%(app_name,frame_count))
@@ -679,7 +681,8 @@ while True:
         )
 
         # Display or process the image using OpenCV or any other library
-        cv2.imshow(profile_performance_title, profile_performance_chart)                         
+        if bViewOutput:
+            cv2.imshow(profile_performance_title, profile_performance_chart)                         
 
         if bWrite:
             filename = ("%s_frame%04d_profiling_performance.png"%(app_name,frame_count))
