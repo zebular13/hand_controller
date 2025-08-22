@@ -28,11 +28,6 @@ import cv2
 #from std_msgs.msg import String
 from geometry_msgs.msg import Twist
 
-# MediaPipe references : 
-#   https://google.github.io/mediapipe/solutions/hands.html
-import mediapipe as mp
-
-
 # PointNet (for Hands) references : 
 #    https://medium.com/@er_95882/asl-recognition-using-pointnet-and-mediapipe-f2efda78d089
 #    https://www.kaggle.com/datasets/ayuraj/asl-dataset
@@ -112,7 +107,6 @@ class HandControllerAslTwistNode(Node):
         self.get_logger().info('Blaze Detector model : "%s"' % self.blaze_model1_fullpath)
         self.blaze_detector = BlazeDetector(self.detector_type)
         self.blaze_detector.set_debug(debug=self.verbose)
-        self.blaze_detector.display_scores(debug=False)
         self.blaze_detector.load_model(self.blaze_model1_fullpath)
         #
         self.blaze_model2_fullpath = os.path.join(self.repo_path,"blaze_app_python",self.blaze_target,"models",self.blaze_model2)
