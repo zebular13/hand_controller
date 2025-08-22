@@ -92,6 +92,9 @@ char2int = {
             "N":12, "O":13, "P":14, "Q":15, "R":16, "S":17, "T":18, "U":19, "V":20, "W":21, "X":22, "Y":23
             }
 
+CAMERA_WIDTH = 640
+CAMERA_HEIGHT = 480
+
 stacked_bar_latency_colors = [
     tria_blue  , # resize
     tria_yellow, # detector_pre
@@ -168,8 +171,8 @@ if bInputCamera == True:
 
     # Open video
     cap = cv2.VideoCapture(input_video)
-    frame_width = 640
-    frame_height = 480
+    frame_width = CAMERA_WIDTH
+    frame_height = CAMERA_HEIGHT
     cap.set(cv2.CAP_PROP_FRAME_WIDTH,frame_width)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT,frame_height)
     #frame_width = int(round(cap.get(cv2.CAP_PROP_FRAME_WIDTH)))
@@ -640,7 +643,8 @@ while True:
         )
 
         # Display or process the image using OpenCV or any other library
-        cv2.imshow(profile_latency_title, profile_latency_chart)                         
+        if bViewOutput:
+            cv2.imshow(profile_latency_title, profile_latency_chart)                         
 
         if bWrite:
             filename = ("%s_frame%04d_profiling_latency.png"%(app_name,frame_count))
@@ -666,7 +670,8 @@ while True:
         )
 
         # Display or process the image using OpenCV or any other library
-        cv2.imshow(profile_performance_title, profile_performance_chart)                         
+        if bViewOutput:
+            cv2.imshow(profile_performance_title, profile_performance_chart)                         
 
         if bWrite:
             filename = ("%s_frame%04d_profiling_performance.png"%(app_name,frame_count))
@@ -751,6 +756,12 @@ while True:
         print("[INFO] bNormalizedLandmarks=",bNormalizedLandmarks)
     
     if key == 27 or key == 113: # ESC or 'q':
+        break
+
+    # automated test/profiling mode
+    if not bViewOutput and frame_count==100:
+        bWrite = True
+    if not bViewOutput and frame_count==101:
         break
 
     # Update the real-time FPS counter
