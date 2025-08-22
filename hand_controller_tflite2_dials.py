@@ -539,6 +539,10 @@ while True:
 
     # Visual Control Dials (display dials)
     start = timer()
+    if lh_data:
+        cv2.circle(output, (int(lh_data.center_perc[0]*CAMERA_WIDTH), int(lh_data.center_perc[1]*CAMERA_HEIGHT)), radius=10, color=tria_pink, thickness=-1)  
+    if rh_data:
+        cv2.circle(output, (int(rh_data.center_perc[0]*CAMERA_WIDTH), int(rh_data.center_perc[1]*CAMERA_HEIGHT)), radius=10, color=tria_pink, thickness=-1)   
     draw_control_overlay(output, lh_data, rh_data)
     profile_dials += timer()-start
 
