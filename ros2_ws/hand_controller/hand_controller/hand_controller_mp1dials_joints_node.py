@@ -27,8 +27,7 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
 
-#from std_msgs.msg import String
-from geometry_msgs.msg import Twist
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 #
 # Tria color palette
@@ -148,15 +147,16 @@ def draw_control_overlay(img, lh_data=None, rh_data=None):
 
     return delta_xy, delta_z
 
-class HandControllerMp1DialsTwistNode(Node):
+class HandControllerMp1DialsJointsNode(Node):
 
     def __init__(self):
-        super().__init__('hand_controller_mp1dials_twist_node')
+        super().__init__('hand_controller_mp1dials_joints_node')
         self.subscriber1_ = self.create_subscription(Image,'image_raw',self.listener_callback,10)
         self.subscriber1_  # prevent unused variable warning
         self.publisher1_ = self.create_publisher(Image, 'hand_controller/image_annotated', 10)
-        # Create publisher for velocity command (twist)
-        self.publisher2_ = self.create_publisher(Twist, 'hand_controller/cmd_vel', 10)        
+        # Create publishers for the '/arm_controller/joint_trajectory' topic
+        self.publisher2_ = self.create_publisher(JointTrajectory, '/arm_controller/joint_trajectory', 10)
+        self.publisher3_ = self.create_publisher(JointTrajectory, '/gripper_controller/joint_trajectory', 10)
 
         # verbose
         self.declare_parameter("verbose", True)
@@ -214,6 +214,42 @@ class HandControllerMp1DialsTwistNode(Node):
         self.blaze_landmark.load_model(self.blaze_model2_fullpath)
 
         # Visual Control Dials
+
+        # Create the JointTrajectory messages
+        self.arm_trajectory_command = JointTrajectory()
+        arm_joint_names = ['shoulder_pan_joint', 'shoulder_lift_joint', 'elbow_joint', 'wrist_joint', 'virtual_roll_joint', 'virtual_yaw_joint']
+        self.arm_trajectory_command.joint_names = arm_joint_names
+        #
+        self.gripper_trajectory_command = JointTrajectory()
+        gripper_joint_names = ['left_finger_joint', 'right_finger_joint']
+        self.gripper_trajectory_command.joint_names = gripper_joint_names
+        
+
+        arm_point= JointTrajectoryPoint()
+        #['shoulder_pan_joint', 'shoulder_lift_joint', 'elbow_joint', 'wrist_joint', 'virtual_roll_joint', 'virtual_yaw_joint']
+        arm_point.positions = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        arm_point.velocities = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        arm_point.time_from_start.sec = 1 #2
+        
+        self.arm_point = arm_point
+        self.arm_trajectory_command.points = [arm_point]
+        
+        # Publish the message
+        self.get_logger().info(f"Publishing arm joint angles : {self.arm_trajectory_command.points}")
+        self.publisher2_.publish(self.arm_trajectory_command)
+
+        gripper_point = JointTrajectoryPoint()
+        #['left_finger_joint', 'right_finger_joint']
+        gripper_point.positions = [0.04, 0.04]
+        gripper_point.velocities = [0.0, 0.0]
+        gripper_point.time_from_start.sec = 1 #2
+        
+        self.gripper_point = gripper_point
+        self.gripper_trajectory_command.points = [gripper_point]
+        
+        # Publish the message
+        self.get_logger().info(f"Publishing gripper joint angles : {self.gripper_trajectory_command.points}")
+        self.publisher3_.publish(self.gripper_trajectory_command)
 
         # Additional Settings (for text overlay)
         self.scale = 1.0
@@ -301,22 +337,77 @@ class HandControllerMp1DialsTwistNode(Node):
             cv2.circle(annotated_image, (int(rh_data.center_perc[0]*image_width), int(rh_data.center_perc[1]*image_height)), radius=10, color=tria_pink, thickness=-1)
         delta_xy, delta_z = draw_control_overlay(annotated_image, lh_data, rh_data)
         #self.get_logger().info(f"delta_xy = {delta_xy} | delta_z = {delta_z}")
-        
-        # Create twist message, and publish
-        msg = Twist()
-        msg.linear.x = delta_xy[1] * 4.0
-        msg.linear.y = 0.0
-        msg.linear.z = 0.0
-        msg.angular.x = 0.0
-        msg.angular.y = 0.0
-        msg.angular.z = delta_xy[0] * 4.0
-        #self.get_logger().info(f"msg = {msg}")
-        self.publisher2_.publish(msg)
 
+        if delta_xy[0] != 0 or delta_xy[1] != 0 or delta_z[1] != 0:
+            try:
+                arm_point = self.arm_point
+
+                # shoulder pan joint : index 0, range +3.14(L) to -3.14(R)
+                shoulder_pan_joint = arm_point.positions[0]
+                shoulder_pan_joint += delta_xy[0] * 0.02
+                if shoulder_pan_joint > +3.14:
+                    shoulder_pan_joint = +3.14
+                if shoulder_pan_joint < -3.14:
+                    shoulder_pan_joint = -3.14
+                arm_point.positions[0] = shoulder_pan_joint
+                                                
+                # shoulder lift joint : index 1, range +1.57(A) to -1.57(B)
+                shoulder_lift_joint = arm_point.positions[1]
+                shoulder_lift_joint += delta_xy[1] * 0.02
+                if shoulder_lift_joint > +1.57:
+                    shoulder_lift_joint = +1.57
+                if shoulder_lift_joint < -1.57:
+                    shoulder_lift_joint = -1.57
+                arm_point.positions[1] = shoulder_lift_joint
+
+                # elbow joint : index 2, range -2.35(U) to +2.34(D)
+                elbow_joint = arm_point.positions[2]
+                elbow_joint -= delta_z[1] * 0.02
+                if elbow_joint < -2.35:
+                    elbow_joint = -2.35
+                if elbow_joint > +2.35:
+                    elbow_joint = +2.35
+                arm_point.positions[2] = elbow_joint
+                        
+                self.arm_point = arm_point
+
+                self.arm_trajectory_command.points = [arm_point]
+        
+                # Publish the message
+                #self.get_logger().info(f"Publishing arm joint angles : {self.arm_trajectory_command.points}")        
+                self.publisher2_.publish(self.arm_trajectory_command)
+                        
+            except Exception as e:
+                self.get_logger().warn(f"Error publishing arm joint angles: {e}")
+
+        if False:
+            try:
+                gripper_point = self.gripper_point
+
+                # left/right finger : index 0/1, range +1.57(A) to -1.57(B)
+                if self.actionDetected == "A : Close Gripper":
+                    finger_joint = 0.00
+                if self.actionDetected == "B : Open Gripper":
+                            finger_joint = 0.04
+                            
+                gripper_point.positions[0] = finger_joint
+                gripper_point.positions[1] = finger_joint
+                        
+                self.gripper_point = gripper_point
+
+                self.gripper_trajectory_command.points = [gripper_point]
+        
+                # Publish the message
+                #self.get_logger().info(f"Publishing gripper joint angles : {self.gripper_trajectory_command.points}")        
+                self.publisher3_.publish(self.gripper_trajectory_command)
+
+            except Exception as e:
+                self.get_logger().warn(f"Error publishing gripper joint angles: {e}")
+                
         if self.use_imshow == True:
             # DISPLAY
             cv2_bgr_image = cv2.cvtColor(annotated_image, cv2.COLOR_RGB2BGR)
-            cv2.imshow('hand_controller_mp1dials_twist_node',cv2_bgr_image)
+            cv2.imshow('hand_controller_mp1dials_joints_node',cv2_bgr_image)
             cv2.waitKey(1)                    
         
         # CONVERT BACK TO ROS & PUBLISH
@@ -327,14 +418,14 @@ class HandControllerMp1DialsTwistNode(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    hand_controller_mp1dials_twist_node = HandControllerMp1DialsTwistNode()
+    hand_controller_mp1dials_joints_node = HandControllerMp1DialsJointsNode()
 
-    rclpy.spin(hand_controller_mp1dials_twist_node)
+    rclpy.spin(hand_controller_mp1dials_joints_node)
 
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
     # when the garbage collector destroys the node object)
-    hand_controller_mp1dials_twist_node.destroy_node()
+    hand_controller_mp1dials_joints_node.destroy_node()
     rclpy.shutdown()
 
 

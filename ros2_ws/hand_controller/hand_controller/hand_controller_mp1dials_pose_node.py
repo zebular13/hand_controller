@@ -27,8 +27,8 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
 
-#from std_msgs.msg import String
-from geometry_msgs.msg import Twist
+from tf2_ros import Buffer, TransformListener
+from geometry_msgs.msg import PoseStamped, TransformStamped
 
 #
 # Tria color palette
@@ -148,15 +148,16 @@ def draw_control_overlay(img, lh_data=None, rh_data=None):
 
     return delta_xy, delta_z
 
-class HandControllerMp1DialsTwistNode(Node):
+class HandControllerMp1DialsPoseNode(Node):
 
     def __init__(self):
-        super().__init__('hand_controller_mp1dials_twist_node')
+        super().__init__('hand_controller_mp1dials_pose_node')
         self.subscriber1_ = self.create_subscription(Image,'image_raw',self.listener_callback,10)
         self.subscriber1_  # prevent unused variable warning
         self.publisher1_ = self.create_publisher(Image, 'hand_controller/image_annotated', 10)
-        # Create publisher for velocity command (twist)
-        self.publisher2_ = self.create_publisher(Twist, 'hand_controller/cmd_vel', 10)        
+        # Create publishers for the current and target pose
+        self.publisher3_ = self.create_publisher(PoseStamped, 'hand_controller/current_pose', 10)        
+        self.publisher4_ = self.create_publisher(PoseStamped, 'hand_controller/target_pose', 10)        
 
         # verbose
         self.declare_parameter("verbose", True)
@@ -214,6 +215,17 @@ class HandControllerMp1DialsTwistNode(Node):
         self.blaze_landmark.load_model(self.blaze_model2_fullpath)
 
         # Visual Control Dials
+
+        # Declare frames as parameters (can be overridden at launch)
+        self.declare_parameter('source_frame', 'base_link')
+        self.declare_parameter('target_frame', 'gripper_base')
+
+        self.source_frame = self.get_parameter('source_frame').get_parameter_value().string_value
+        self.target_frame = self.get_parameter('target_frame').get_parameter_value().string_value
+
+        # TF2 setup
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
 
         # Additional Settings (for text overlay)
         self.scale = 1.0
@@ -301,22 +313,53 @@ class HandControllerMp1DialsTwistNode(Node):
             cv2.circle(annotated_image, (int(rh_data.center_perc[0]*image_width), int(rh_data.center_perc[1]*image_height)), radius=10, color=tria_pink, thickness=-1)
         delta_xy, delta_z = draw_control_overlay(annotated_image, lh_data, rh_data)
         #self.get_logger().info(f"delta_xy = {delta_xy} | delta_z = {delta_z}")
-        
-        # Create twist message, and publish
-        msg = Twist()
-        msg.linear.x = delta_xy[1] * 4.0
-        msg.linear.y = 0.0
-        msg.linear.z = 0.0
-        msg.angular.x = 0.0
-        msg.angular.y = 0.0
-        msg.angular.z = delta_xy[0] * 4.0
-        #self.get_logger().info(f"msg = {msg}")
-        self.publisher2_.publish(msg)
+   
+        if delta_xy[1] != 0 or delta_xy[0] != 0 or delta_z[1] != 0:
+            try:
+                now = rclpy.time.Time()
+                trans: TransformStamped = self.tf_buffer.lookup_transform(
+                    self.source_frame,
+                    self.target_frame,
+                    now,
+                    timeout=rclpy.duration.Duration(seconds=0.5)
+                )
+
+                current_pose_msg = PoseStamped()
+                current_pose_msg.header = trans.header
+                current_pose_msg.pose.position.x = trans.transform.translation.x
+                current_pose_msg.pose.position.y = trans.transform.translation.y
+                current_pose_msg.pose.position.z = trans.transform.translation.z
+                current_pose_msg.pose.orientation = trans.transform.rotation
+
+                self.publisher3_.publish(current_pose_msg)
+                self.get_logger().info(f"Published current pose: {current_pose_msg.pose.position}")
+                        
+                target_pose_msg = PoseStamped()
+                target_pose_msg.header = trans.header
+                target_pose_msg.pose.position.x = trans.transform.translation.x
+                target_pose_msg.pose.position.y = trans.transform.translation.y
+                target_pose_msg.pose.position.z = trans.transform.translation.z
+                target_pose_msg.pose.orientation = trans.transform.rotation
+
+                # Left/Right                        
+                target_pose_msg.pose.position.x += delta_xy[0] * 0.2
+
+                 # Advance/BackUp
+                target_pose_msg.pose.position.y += delta_xy[1] * 0.2
+
+                # Up/Down
+                target_pose_msg.pose.position.z += delta_z[1] * 0.2
+
+                self.publisher4_.publish(target_pose_msg)
+                self.get_logger().info(f"Published target  pose: {target_pose_msg.pose.position}")
+                        
+            except Exception as e:
+                self.get_logger().warn(f"TF lookup failed: {e}")
 
         if self.use_imshow == True:
             # DISPLAY
             cv2_bgr_image = cv2.cvtColor(annotated_image, cv2.COLOR_RGB2BGR)
-            cv2.imshow('hand_controller_mp1dials_twist_node',cv2_bgr_image)
+            cv2.imshow('hand_controller_mp1dials_pose_node',cv2_bgr_image)
             cv2.waitKey(1)                    
         
         # CONVERT BACK TO ROS & PUBLISH
@@ -327,14 +370,14 @@ class HandControllerMp1DialsTwistNode(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    hand_controller_mp1dials_twist_node = HandControllerMp1DialsTwistNode()
+    hand_controller_mp1dials_pose_node = HandControllerMp1DialsPoseNode()
 
-    rclpy.spin(hand_controller_mp1dials_twist_node)
+    rclpy.spin(hand_controller_mp1dials_pose_node)
 
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
     # when the garbage collector destroys the node object)
-    hand_controller_mp1dials_twist_node.destroy_node()
+    hand_controller_mp1dials_pose_node.destroy_node()
     rclpy.shutdown()
 
 

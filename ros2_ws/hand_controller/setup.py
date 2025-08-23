@@ -29,6 +29,8 @@ setup(
             'hand_controller_asl_joints_node = hand_controller.hand_controller_asl_joints_node:main', 
             'hand_controller_asl_pose_node = hand_controller.hand_controller_asl_pose_node:main', 
             'hand_controller_mp1dials_twist_node = hand_controller.hand_controller_mp1dials_twist_node:main', 
+            'hand_controller_mp1dials_joints_node = hand_controller.hand_controller_mp1dials_joints_node:main', 
+            'hand_controller_mp1dials_pose_node = hand_controller.hand_controller_mp1dials_pose_node:main', 
         ],
     },
 )
