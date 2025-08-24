@@ -339,7 +339,8 @@ class HandControllerAslPoseNode(Node):
                         current_pose_msg.pose.orientation = trans.transform.rotation
 
                         self.publisher3_.publish(current_pose_msg)
-                        self.get_logger().info(f"Published current pose: {current_pose_msg.pose.position}")
+                        if self.verbose:
+                            self.get_logger().info(f"Published current pose: {current_pose_msg.pose.position}")
                         
                         target_pose_msg = PoseStamped()
                         target_pose_msg.header = trans.header
@@ -364,7 +365,8 @@ class HandControllerAslPoseNode(Node):
                           target_pose_msg.pose.position.x = target_pose_msg.pose.position.x + 0.02 #2.0
 
                         self.publisher4_.publish(target_pose_msg)
-                        self.get_logger().info(f"Published target  pose: {target_pose_msg.pose.position}")
+                        if self.verbose:
+                            self.get_logger().info(f"Published target  pose: {target_pose_msg.pose.position}")
                         
 
                     except Exception as e:
