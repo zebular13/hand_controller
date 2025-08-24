@@ -250,9 +250,9 @@ class HandControllerMp1DialsTwistNode(Node):
         # BlazePalm pipeline
         #
 
-        #from visualization import draw_roi, draw_detections
-        from visualization import draw_landmarks
-        from visualization import HAND_CONNECTIONS
+        from visualization import draw_detections
+        #from visualization import draw_roi, draw_landmarks
+        #from visualization import HAND_CONNECTIONS
     
         #image = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
         img1,scale1,pad1 = self.blaze_detector.resize_pad(image)
@@ -310,8 +310,9 @@ class HandControllerMp1DialsTwistNode(Node):
         msg.angular.x = 0.0
         msg.angular.y = 0.0
         msg.angular.z = delta_xy[0] * 4.0
-        #self.get_logger().info(f"msg = {msg}")
         self.publisher2_.publish(msg)
+        if self.verbose:
+            self.get_logger().info(f"Published twist msg with linear={linear:.3f} angular={angular:.3f}")
 
         if self.use_imshow == True:
             # DISPLAY

@@ -262,9 +262,9 @@ class HandControllerMp1DialsPoseNode(Node):
         # BlazePalm pipeline
         #
 
-        #from visualization import draw_roi, draw_detections
-        from visualization import draw_landmarks
-        from visualization import HAND_CONNECTIONS
+        from visualization import draw_detections
+        #from visualization import draw_roi, draw_landmarks
+        #from visualization import HAND_CONNECTIONS
     
         #image = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
         img1,scale1,pad1 = self.blaze_detector.resize_pad(image)
@@ -332,7 +332,9 @@ class HandControllerMp1DialsPoseNode(Node):
                 current_pose_msg.pose.orientation = trans.transform.rotation
 
                 self.publisher3_.publish(current_pose_msg)
-                self.get_logger().info(f"Published current pose: {current_pose_msg.pose.position}")
+
+                if self.verbose:
+                    self.get_logger().info(f"Published current pose: {current_pose_msg.pose.position:+.3f}")
                         
                 target_pose_msg = PoseStamped()
                 target_pose_msg.header = trans.header
@@ -351,7 +353,8 @@ class HandControllerMp1DialsPoseNode(Node):
                 target_pose_msg.pose.position.z += delta_z[1] * 0.2
 
                 self.publisher4_.publish(target_pose_msg)
-                self.get_logger().info(f"Published target  pose: {target_pose_msg.pose.position}")
+                if self.verbose:
+                    self.get_logger().info(f"Published target  pose: {target_pose_msg.pose.position:+.3f}")
                         
             except Exception as e:
                 self.get_logger().warn(f"TF lookup failed: {e}")

@@ -1,6 +1,6 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 
 def generate_launch_description():
@@ -25,6 +25,16 @@ def generate_launch_description():
             default_value="hand_landmark_lite.tflite",
             description="Name of blaze landmark model."
         ),
+        DeclareLaunchArgument(
+            "verbose",
+            default_value="True",
+            description="Verbose mode."
+        ),               
+        DeclareLaunchArgument(
+            "use_imshow",
+            default_value="False",
+            description="Enable OpenCV display."
+        ),
         Node(
             package='hand_controller',
             executable='usbcam_publisher_node',
@@ -42,8 +52,8 @@ def generate_launch_description():
                {"blaze_target":LaunchConfiguration("blaze_target")},
                {"blaze_model1":LaunchConfiguration("blaze_model1")},
                {"blaze_model2":LaunchConfiguration("blaze_model2")},
-               {"verbose":True},
-               {"use_imshow":False}
+               {"verbose":PythonExpression(['"', LaunchConfiguration('verbose'), '" == "True"'])},
+               {"use_imshow":PythonExpression(['"', LaunchConfiguration('use_imshow'), '" == "True"'])}
             ],
             remappings=[
                ("image_raw", "usbcam_image"),

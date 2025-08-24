@@ -1,6 +1,6 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 
 def generate_launch_description():
@@ -24,7 +24,17 @@ def generate_launch_description():
             "blaze_model2",
             default_value="hand_landmark_lite.tflite",
             description="Name of blaze landmark model."
-        ),       
+        ),
+        DeclareLaunchArgument(
+            "verbose",
+            default_value="True",
+            description="Verbose mode."
+        ),               
+        DeclareLaunchArgument(
+            "use_imshow",
+            default_value="False",
+            description="Enable OpenCV display."
+        ),
         Node(
             package='hand_controller',
             executable='usbcam_publisher_node',

@@ -138,7 +138,7 @@ All of the demos are partitionned in 2 parts:
 
 Launch the hand_controller_asl_twist node with usbcam_publisher and turtlesim nodes:
 
-   - ros2 launch hand_controller demo01_turtlesim_asl_part1.launch.py | ros2 launch hand_controller demo01_turtlesim_asl_part2.launch.py
+   - ros2 launch hand_controller demo01_turtlesim_part1_asl.launch.py | ros2 launch hand_controller demo01_turtlesim_part2.launch.py
 
 ![](https://github.com/AlbertaBeef/asl_mediapipe_pointnet/blob/main/images/asl_mediapipe_pointnet_demo01_ros2_turtlesim.gif)
 
@@ -148,7 +148,7 @@ Launch the hand_controller_asl_twist node with usbcam_publisher and turtlesim no
 
 Launch the hand_controller_asl_twist node with MOGI-ROS vehicle:
 
-   - ros2 launch hand_controller demo11_mogiros_car_asl_part1.launch.py | ros2 launch hand_controller demo11_mogiros_car_asl_part2.launch.py
+   - ros2 launch hand_controller demo11_mogiros_car_part1_asl.launch.py | ros2 launch hand_controller demo11_mogiros_car_part2.launch.py
 
 Control Vehicle with Hand Signs
 
@@ -161,7 +161,7 @@ Control Vehicle with Hand Signs
 
 Launch the hand_controller_asl_twist node with ROSMASTER-X3 vehicle:
 
-   - ros2 launch hand_controller demo12_rosmaster_asl_part1.launch.py | ros2 launch hand_controller demo12_rosmaster_asl_part2.launch.py
+   - ros2 launch hand_controller demo12_rosmaster_part1_asl.launch.py | ros2 launch hand_controller demo12_rosmaster_part2.launch.py
 
 Control Vehicle with Hand Signs
 
@@ -177,7 +177,7 @@ Control Vehicle with Hand Signs
 
 Launch the hand_controller_asl_pose node with MOGI-ROS simple robotic arm:
 
-   - ros2 launch hand_controller demo21_mogiros_arm_asl_part1.launch.py | ros2 launch hand_controller demo21_mogiros_arm_asl_part2.launch.py
+   - ros2 launch hand_controller demo21_mogiros_arm_part1_asl.launch.py | ros2 launch hand_controller demo21_mogiros_arm_part2.launch.py
 
 Control Robotic Arm with Left/Right Hands:
 
@@ -187,7 +187,7 @@ Control Robotic Arm with Left/Right Hands:
       - A : Advance Arm (shoulder joint)
       - B : Backup Arm (shoulder joint)
       - U : Lift Arm (elbow joint)
-      - D : Lower Arm (elbow joint)
+      - Y : Lower Arm (elbow joint)
 
    - Right Hand
       - A : Close Gripper
@@ -197,7 +197,7 @@ Control Robotic Arm with Left/Right Hands:
 
 Launch the hand_controller_asl_pose node with MYCOBOT-280 robotic arm:
 
-   - ros2 launch hand_controller demo31_mycobot_asl_part1.launch.py | moveit | ros2 launch hand_controller demo31_mycobot_asl_part2.launch.py
+   - ros2 launch hand_controller demo31_mycobot_part1_asl.launch.py | moveit | ros2 launch hand_controller demo31_mycobot_part2.launch.py
 
 
 Control Robotic Arm with Hand Signs
@@ -207,7 +207,7 @@ Control Robotic Arm with Hand Signs
    - A : Move Forward
    - B : Move Backward
    - U : Move Up
-   - D : Move Down
+   - Y : Move Down
 
 ![](https://github.com/AlbertaBeef/asl_mediapipe_pointnet/blob/main/images/asl_mediapipe_pointnet_demo03_ros2_gazebo_mycobot.gif)
 

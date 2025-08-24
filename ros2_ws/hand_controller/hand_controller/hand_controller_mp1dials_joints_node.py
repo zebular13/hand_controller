@@ -235,7 +235,13 @@ class HandControllerMp1DialsJointsNode(Node):
         self.arm_trajectory_command.points = [arm_point]
         
         # Publish the message
-        self.get_logger().info(f"Publishing arm joint angles : {self.arm_trajectory_command.points}")
+        if self.verbose:
+            #self.get_logger().info(f"Publishing arm joint angles : {self.arm_trajectory_command.points}")
+            shoulder_pan_joint = self.arm_point.positions[0]
+            shoulder_lift_joint = self.arm_point.positions[1]
+            elbow_joint = self.arm_point.positions[2]
+            self.get_logger().info(f"ShoulderPanJoint={shoulder_pan_joint:+.3f} ShoulderLiftJoint={shoulder_lift_joint:+.3f} ElbowJoint={elbow_joint:+.3f}")
+
         self.publisher2_.publish(self.arm_trajectory_command)
 
         gripper_point = JointTrajectoryPoint()
@@ -248,7 +254,11 @@ class HandControllerMp1DialsJointsNode(Node):
         self.gripper_trajectory_command.points = [gripper_point]
         
         # Publish the message
-        self.get_logger().info(f"Publishing gripper joint angles : {self.gripper_trajectory_command.points}")
+        if self.verbose:
+            #self.get_logger().info(f"Publishing gripper joint angles : {self.gripper_trajectory_command.points}")
+            finger_joint = self.gripper_point.positions[0]
+            self.get_logger().info(f"FingerJoint={finger_joint:+.3f}")
+
         self.publisher3_.publish(self.gripper_trajectory_command)
 
         # Additional Settings (for text overlay)
@@ -286,9 +296,9 @@ class HandControllerMp1DialsJointsNode(Node):
         # BlazePalm pipeline
         #
 
-        #from visualization import draw_roi, draw_detections
-        from visualization import draw_landmarks
-        from visualization import HAND_CONNECTIONS
+        from visualization import draw_detections
+        #from visualization import draw_roi, draw_landmarks
+        #from visualization import HAND_CONNECTIONS
     
         #image = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
         img1,scale1,pad1 = self.blaze_detector.resize_pad(image)
@@ -373,8 +383,11 @@ class HandControllerMp1DialsJointsNode(Node):
 
                 self.arm_trajectory_command.points = [arm_point]
         
+                if self.verbose:
+                    #self.get_logger().info(f"Publishing arm joint angles : {self.arm_trajectory_command.points}")
+                    self.get_logger().info(f"ShoulderPanJoint={shoulder_pan_joint:+.3f} ShoulderLiftJoint={shoulder_lift_joint:+.3f} ElbowJoint={elbow_joint:+.3f}")
+
                 # Publish the message
-                #self.get_logger().info(f"Publishing arm joint angles : {self.arm_trajectory_command.points}")        
                 self.publisher2_.publish(self.arm_trajectory_command)
                         
             except Exception as e:
@@ -388,7 +401,7 @@ class HandControllerMp1DialsJointsNode(Node):
                 if self.actionDetected == "A : Close Gripper":
                     finger_joint = 0.00
                 if self.actionDetected == "B : Open Gripper":
-                            finger_joint = 0.04
+                    finger_joint = 0.04
                             
                 gripper_point.positions[0] = finger_joint
                 gripper_point.positions[1] = finger_joint
@@ -396,9 +409,12 @@ class HandControllerMp1DialsJointsNode(Node):
                 self.gripper_point = gripper_point
 
                 self.gripper_trajectory_command.points = [gripper_point]
+
+                if self.verbose:
+                    #self.get_logger().info(f"Publishing gripper joint angles : {self.gripper_trajectory_command.points}")
+                    self.get_logger().info(f"FingerJoint={finger_joint:+.3f}")
         
                 # Publish the message
-                #self.get_logger().info(f"Publishing gripper joint angles : {self.gripper_trajectory_command.points}")        
                 self.publisher3_.publish(self.gripper_trajectory_command)
 
             except Exception as e:

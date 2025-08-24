@@ -157,8 +157,8 @@ class HandControllerAslTwistNode(Node):
         # BlazePalm pipeline
         #
 
-        #from visualization import draw_roi, draw_detections
-        from visualization import draw_landmarks
+        from visualization import draw_detections
+        from visualization import draw_roi, draw_landmarks
         from visualization import HAND_CONNECTIONS
     
         #image = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
@@ -247,7 +247,7 @@ class HandControllerAslTwistNode(Node):
                                                                 
                 # Draw hand landmarks of each hand.
                 if self.bShowLandmarks == True:                
-                    draw_landmarks(annotated_image, landmark[:,:2], HAND_CONNECTIONS, color=hand_color, size=3)
+                    draw_landmarks(annotated_image, landmark[:,:2], HAND_CONNECTIONS, thickness=2, radius=4, color=hand_color)
 	
                 asl_sign = ""
                 self.actionDetected = ""
@@ -265,7 +265,7 @@ class HandControllerAslTwistNode(Node):
                         (hand_x,hand_y),
                         self.text_fontType,self.text_fontSize,
                         hand_color,self.text_lineSize,self.text_lineType)
-        
+
                     if handedness == "Left":
                         # Define action
                         if asl_sign == 'A':
@@ -283,7 +283,8 @@ class HandControllerAslTwistNode(Node):
                             self.text_fontType,self.text_fontSize,
                             hand_color,self.text_lineSize,self.text_lineType)
 
-                        self.get_logger().info(f"{asl_text} => {action_text}")
+                        if self.verbose:
+                            self.get_logger().info(f"{asl_text} => {action_text}")
 
  
                     if handedness == "Right":
@@ -296,8 +297,8 @@ class HandControllerAslTwistNode(Node):
                             self.text_fontType,self.text_fontSize,
                             hand_color,self.text_lineSize,self.text_lineType)
 
-
-                        self.get_logger().info(f"{asl_text} => {action_text}")
+                        if self.verbose:
+                            self.get_logger().info(f"{asl_text} => {action_text}")
 
 
                 except:

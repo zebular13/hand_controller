@@ -169,8 +169,8 @@ class HandControllerAslPoseNode(Node):
         # BlazePalm pipeline
         #
 
-        #from visualization import draw_roi, draw_detections
-        from visualization import draw_landmarks
+        from visualization import draw_detections
+        from visualization import draw_roi, draw_landmarks
         from visualization import HAND_CONNECTIONS
     
         #image = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
@@ -259,7 +259,7 @@ class HandControllerAslPoseNode(Node):
                                                                 
                 # Draw hand landmarks of each hand.
                 if self.bShowLandmarks == True:                
-                    draw_landmarks(annotated_image, landmark[:,:2], HAND_CONNECTIONS, color=hand_color, size=3)
+                    draw_landmarks(annotated_image, landmark[:,:2], HAND_CONNECTIONS, thickness=2, radius=4, color=hand_color)
 	
                 asl_sign = ""
                 self.actionDetected = ""
@@ -290,8 +290,8 @@ class HandControllerAslPoseNode(Node):
                           self.actionDetected = "R : Right"
                         if asl_sign == 'U':
                           self.actionDetected = "U : Up"
-                        if asl_sign == 'D':
-                          self.actionDetected = "D : Down"
+                        if asl_sign == 'Y':
+                          self.actionDetected = "Y : Down"
 
                         action_text = '['+self.actionDetected+']'
                         cv2.putText(annotated_image,action_text,
@@ -299,7 +299,8 @@ class HandControllerAslPoseNode(Node):
                             self.text_fontType,self.text_fontSize,
                             hand_color,self.text_lineSize,self.text_lineType)
 
-                        self.get_logger().info(f"{asl_text} => {action_text}")
+                        if self.verbose:
+                            self.get_logger().info(f"{asl_text} => {action_text}")
 
  
                     if handedness == "Right":
@@ -312,7 +313,8 @@ class HandControllerAslPoseNode(Node):
                             self.text_fontType,self.text_fontSize,
                             hand_color,self.text_lineSize,self.text_lineType)
 
-                        self.get_logger().info(f"{asl_text} => {action_text}")
+                        if self.verbose:
+                            self.get_logger().info(f"{asl_text} => {action_text}")
 
 
                 except:
@@ -348,7 +350,7 @@ class HandControllerAslPoseNode(Node):
                         
                         if self.actionDetected == "U : Up":
                           target_pose_msg.pose.position.z = target_pose_msg.pose.position.z + 0.02 #2.0
-                        if self.actionDetected == "D : Down":
+                        if self.actionDetected == "Y : Down":
                           target_pose_msg.pose.position.z = target_pose_msg.pose.position.z - 0.02 #2.0
 
                         if self.actionDetected == "A : Advance":
