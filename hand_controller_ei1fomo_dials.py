@@ -24,7 +24,7 @@ limitations under the License.
 #      edge_impulse_linux
 #
 
-app_name = "hand_controller_eifomo_dials"
+app_name = "hand_controller_ei1fomo_dials"
 
 import numpy as np
 import cv2
