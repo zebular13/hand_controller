@@ -214,13 +214,9 @@ thresh_confidence_prev = thresh_confidence
 
 # Visual Control Dials
 
-CV_DRAW_COLOR_PRIMARY = (255, 255, 0)
+CV_DRAW_COLOR_PRIMARY = tria_aqua
 
 CONTROL_CIRCLE_DEADZONE_R = 50
-
-CONTROL_CIRCLE_XY_CENTER = (int(CAMERA_WIDTH/4), int(CAMERA_HEIGHT/2))
-CONTROL_CIRCLE_Z_APERATURE_CENTER = (int(3*CAMERA_WIDTH/4), int(CAMERA_HEIGHT/2))
-
 
 @dataclass
 class HandData:
@@ -228,15 +224,11 @@ class HandData:
     landmarks: list
     center_perc: tuple
 
-    def __init__(self, handedness, landmarks):
+    def __init__(self, handedness, landmarks, image_width, image_height):
         self.handedness = handedness
-        #self.landmarks = landmarks
-        #x_avg = sum(lm.x for lm in landmarks) / len(landmarks)
-        #y_avg = sum(lm.y for lm in landmarks) / len(landmarks)
-        #z_avg = sum(lm.z for lm in landmarks) / len(landmarks)
         self.landmarks = landmarks.copy()
-        self.landmarks[:,0] = self.landmarks[:,0] / CAMERA_WIDTH
-        self.landmarks[:,1] = self.landmarks[:,1] / CAMERA_HEIGHT        
+        self.landmarks[:,0] = self.landmarks[:,0] / image_width
+        self.landmarks[:,1] = self.landmarks[:,1] / image_height        
         landmarks_len = landmarks.shape[0]
         x_avg = sum(self.landmarks[:,0]) / landmarks_len
         y_avg = sum(self.landmarks[:,1]) / landmarks_len
@@ -246,9 +238,17 @@ class HandData:
         #print(f"center_perc: {self.center_perc}")
 
 def draw_control_overlay(img, lh_data=None, rh_data=None):
+    CAMERA_HEIGHT, CAMERA_WIDTH, _ = img.shape
+
+    CONTROL_CIRCLE_XY_CENTER = (int(CAMERA_WIDTH/4), int(CAMERA_HEIGHT/2))
+    CONTROL_CIRCLE_Z_APERATURE_CENTER = (int(3*CAMERA_WIDTH/4), int(CAMERA_HEIGHT/2))
+    
     # Draw control circle for XY control (left hand)
     cv2.circle(img, CONTROL_CIRCLE_XY_CENTER,
                CONTROL_CIRCLE_DEADZONE_R, CV_DRAW_COLOR_PRIMARY, 2)
+
+    center_xy_point = CONTROL_CIRCLE_XY_CENTER
+    hand_xy_point = CONTROL_CIRCLE_XY_CENTER # until proven otherwise
 
     if lh_data:
         # Normalize and compute actual pixel position of left hand
@@ -261,7 +261,6 @@ def draw_control_overlay(img, lh_data=None, rh_data=None):
                        CONTROL_CIRCLE_DEADZONE_R) + CONTROL_CIRCLE_XY_CENTER[1]
 
         hand_xy_point = (xy_ctl_x, xy_ctl_y)
-        center_xy_point = CONTROL_CIRCLE_XY_CENTER
 
         # Draw line from center to hand position
         cv2.line(img, center_xy_point, hand_xy_point,
@@ -270,9 +269,16 @@ def draw_control_overlay(img, lh_data=None, rh_data=None):
         # Draw hand position dot
         cv2.circle(img, hand_xy_point, 4, CV_DRAW_COLOR_PRIMARY, cv2.FILLED)
 
+    # Calculate normalized delta values
+    delta_xy = tuple(np.subtract(center_xy_point,hand_xy_point))
+    delta_xy = tuple(c/CONTROL_CIRCLE_DEADZONE_R for c in delta_xy)
+
     # Draw control circle for Z-aperture (right hand)
     cv2.circle(img, CONTROL_CIRCLE_Z_APERATURE_CENTER,
                CONTROL_CIRCLE_DEADZONE_R, CV_DRAW_COLOR_PRIMARY, 2)
+
+    center_z_point = CONTROL_CIRCLE_Z_APERATURE_CENTER
+    hand_z_point = CONTROL_CIRCLE_Z_APERATURE_CENTER # until proven otherwise
 
     if rh_data:
         z_ctl_pct_normalized = min((rh_data.center_perc[1] - 0.50) * 2, 1.0)
@@ -285,7 +291,6 @@ def draw_control_overlay(img, lh_data=None, rh_data=None):
                       CONTROL_CIRCLE_DEADZONE_R) + CONTROL_CIRCLE_Z_APERATURE_CENTER[1]
 
         hand_z_point = (aperature_ctl_x, z_ctl_y)
-        center_z_point = CONTROL_CIRCLE_Z_APERATURE_CENTER
 
         # Draw line from center to hand Z-position
         cv2.line(img, center_z_point, hand_z_point,
@@ -294,10 +299,15 @@ def draw_control_overlay(img, lh_data=None, rh_data=None):
         # Draw hand position dot
         cv2.circle(img, hand_z_point, 4, CV_DRAW_COLOR_PRIMARY, cv2.FILLED)
 
+    # Calculate normalized delta values
+    delta_z = tuple(np.subtract(center_z_point,hand_z_point))
+    delta_z = tuple(c/CONTROL_CIRCLE_DEADZONE_R for c in delta_z)
+
     # Optional: draw vertical center reference line
     cv2.line(img, (int(CAMERA_WIDTH / 2), 0),
              (int(CAMERA_WIDTH / 2), CAMERA_HEIGHT), CV_DRAW_COLOR_PRIMARY, 1)
-       
+
+    return delta_xy, delta_z       
         
 print("================================================================")
 print("Hand Controller (TFLite) with Dials")
@@ -532,9 +542,9 @@ while True:
 
                 # Visual Control Dials (prepare hand data)
                 if handedness == "Left":
-                    lh_data = HandData(handedness, landmark)
+                    lh_data = HandData(handedness, landmark, CAMERA_WIDTH, CAMERA_HEIGHT)
                 else:
-                    rh_data = HandData(handedness, landmark)
+                    rh_data = HandData(handedness, landmark, CAMERA_WIDTH, CAMERA_HEIGHT)
 
         profile_dials += timer()-start
 
@@ -544,8 +554,9 @@ while True:
         cv2.circle(output, (int(lh_data.center_perc[0]*CAMERA_WIDTH), int(lh_data.center_perc[1]*CAMERA_HEIGHT)), radius=10, color=tria_pink, thickness=-1)  
     if rh_data:
         cv2.circle(output, (int(rh_data.center_perc[0]*CAMERA_WIDTH), int(rh_data.center_perc[1]*CAMERA_HEIGHT)), radius=10, color=tria_pink, thickness=-1)
-    draw_control_overlay(output, lh_data, rh_data)
+    delta_xy, delta_z = draw_control_overlay(output, lh_data, rh_data)
     profile_dials += timer()-start
+    print(f"[INFO] DIALS XY={delta_xy[0]:+.3f}|{delta_xy[1]:+.3f}, Z={delta_z[0]:+.3f}|{delta_z[1]:+.3f}")
 
     # display real-time FPS counter (if valid)
     if rt_fps_valid == True and bShowFPS:
