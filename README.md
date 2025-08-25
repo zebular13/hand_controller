@@ -15,45 +15,45 @@ For a version using Google MediaPipe, please refer to the following alternate im
 
 The repo must be cloned with the --recursive option to clone the blaze_app_python submodule:
 
-- git clone --recursive https://github.com/AlbertaBeef/hand_controller
-- cd hand_controller
+   - git clone --recursive https://github.com/AlbertaBeef/hand_controller
+   - cd hand_controller
 
 If already cloned without the --recursive option, the blaze_app_python content can be obtained as follows:
 
-- cd hand_controller
-- git submodule update --recursive
+   - cd hand_controller
+   - git submodule update --recursive
 
 
 ## Downloading the ASL model
 
 The ASL pointnet (PyTorch) model can be downloaded as follows:
 
-- cd asl_pointnet
-- source ./get_model.sh
-- cd ..
+   - cd asl_pointnet
+   - source ./get_model.sh
+   - cd ..
 
 
 ## Downloading the MediaPipe models
 
 The original TFLite MediaPipe models can be downloaded as follows:
 
-- cd blaze_app_python/blaze_tflite/models
-- source ./get_tflite_models.sh
-- cd ../../..
+   - cd blaze_app_python/blaze_tflite/models
+   - source ./get_tflite_models.sh
+   - cd ../../..
 
 The converted PyTorch MediaPipe models can be downloaded as follows:
 
-- cd blaze_app_python/blaze_pytorch/models
-- source ./get_pytorch_models.sh
-- cd ../../..
+   - cd blaze_app_python/blaze_pytorch/models
+   - source ./get_pytorch_models.sh
+   - cd ../../..
 
 The Hailo-8 optimized MediaPipe models can be downloaded as follows:
 
-- cd blaze_app_python/blaze_hailo/models
-- source ./get_hailo8_models.sh
-- unzip blaze_hailo8_models.zip
-- cp hailo8/*.hef .
-- cd ../../..
+   - cd blaze_app_python/blaze_hailo/models
+   - source ./get_hailo8_models.sh
+   - unzip blaze_hailo8_models.zip
+   - cp hailo8/*.hef .
+   - cd ../../..
 
 
 
@@ -61,9 +61,9 @@ The Hailo-8 optimized MediaPipe models can be downloaded as follows:
 
 The following dependencies are required:
 
-- tensorflow
-- pytorch
-- opencv
+   - tensorflow
+   - pytorch
+   - opencv
 
 
 ## Stand-Alone Operation
@@ -197,7 +197,8 @@ Control Robotic Arm with Left/Right Hands:
 
 Launch the hand_controller_asl_pose node with MYCOBOT-280 robotic arm:
 
-   - ros2 launch hand_controller demo31_mycobot_part1_asl.launch.py | moveit | ros2 launch hand_controller demo31_mycobot_part2.launch.py
+   - moveit &
+   - ros2 launch hand_controller demo31_mycobot_part1_asl.launch.py | ros2 launch hand_controller demo31_mycobot_part2.launch.py
 
 
 Control Robotic Arm with Hand Signs
