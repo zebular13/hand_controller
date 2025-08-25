@@ -44,7 +44,10 @@ def generate_launch_description():
 
     default_robot_name = 'rosmaster_x3'
     gazebo_models_path = 'models'
-    default_world_file = 'empty.world'
+    #default_world_file = 'empty.world'
+    #default_z = '0.05'
+    default_world_file = 'cafe.world'
+    default_z = '0.20'
     gazebo_worlds_path = 'worlds'
     ros_gz_bridge_config_file_path = 'config/ros_gz_bridge.yaml'
     rviz_config_filename = 'yahboom_rosmaster_gazebo_sim.rviz'
@@ -166,7 +169,8 @@ def generate_launch_description():
 
     declare_z_cmd = DeclareLaunchArgument(
         name='z',
-        default_value='0.05',
+        #default_value='0.05',
+        default_value=default_z,
         description='z component of initial position, meters')
 
     declare_roll_cmd = DeclareLaunchArgument(
