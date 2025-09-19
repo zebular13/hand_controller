@@ -442,7 +442,7 @@ with ImageImpulseRunner(modelfile) as runner:
     # EdgeImpulse FOMO pipeline
     #
     
-    # Create square images for left | right sides
+    # Create square cropped image
     start = timer()
     image = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
     image_size = max(CAMERA_WIDTH,CAMERA_HEIGHT)    

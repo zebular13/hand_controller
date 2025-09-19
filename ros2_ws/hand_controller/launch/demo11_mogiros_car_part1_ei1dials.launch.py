@@ -11,20 +11,10 @@ def generate_launch_description():
             description="Path (absolute) to hand_controller repo."
         ),
         DeclareLaunchArgument(
-            "blaze_target",
-            default_value="blaze_tflite",
-            description="blaze target implementation."
+            "model",
+            default_value="/root/hand_controller/handsv2.eim",
+            description="Name of Edge Impulse FOMO model."
         ),       
-        DeclareLaunchArgument(
-            "blaze_model1",
-            default_value="palm_detection_lite.tflite",
-            description="Name of blaze detection model."
-        ),       
-        DeclareLaunchArgument(
-            "blaze_model2",
-            default_value="hand_landmark_lite.tflite",
-            description="Name of blaze landmark model."
-        ),
         DeclareLaunchArgument(
             "verbose",
             default_value="True",
@@ -43,13 +33,11 @@ def generate_launch_description():
         ),
         Node(
             package='hand_controller',
-            executable='hand_controller_mp1dials_twist_node',
+            executable='hand_controller_ei1dials_twist_node',
             name="hand_controller",
             parameters=[
                {"repo_path":LaunchConfiguration("repo_path")},
-               {"blaze_target":LaunchConfiguration("blaze_target")},
-               {"blaze_model1":LaunchConfiguration("blaze_model1")},
-               {"blaze_model2":LaunchConfiguration("blaze_model2")},
+               {"model":LaunchConfiguration("model")},
                {"verbose":PythonExpression(['"', LaunchConfiguration('verbose'), '" == "True"'])},
                {"use_imshow":PythonExpression(['"', LaunchConfiguration('use_imshow'), '" == "True"'])}
             ],

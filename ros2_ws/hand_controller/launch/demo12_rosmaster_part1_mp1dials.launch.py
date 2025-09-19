@@ -50,8 +50,8 @@ def generate_launch_description():
                {"blaze_target":LaunchConfiguration("blaze_target")},
                {"blaze_model1":LaunchConfiguration("blaze_model1")},
                {"blaze_model2":LaunchConfiguration("blaze_model2")},
-               {"verbose":True},
-               {"use_imshow":False}
+               {"verbose":PythonExpression(['"', LaunchConfiguration('verbose'), '" == "True"'])},
+               {"use_imshow":PythonExpression(['"', LaunchConfiguration('use_imshow'), '" == "True"'])}
             ],
             remappings=[
                ("image_raw", "usbcam_image"),
