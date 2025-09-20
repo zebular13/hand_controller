@@ -1,7 +1,8 @@
 import os
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
-from launch.conditions import IfCondition
+from launch.conditions import IfCondition, UnlessCondition
+from launch.substitutions import PythonExpression
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, Command
 from launch_ros.actions import Node
@@ -18,6 +19,11 @@ def generate_launch_description():
         "viewer1_name",
         default_value="Hand Controller",
         description="Name of Image Viewer for hand_controller/annotations."
+    )
+    use_imshow_arg = DeclareLaunchArgument(
+        "use_imshow",
+        default_value="True",
+        description="Use usbcam_subscriber to view annotated image."
     )
     
     rviz_launch_arg = DeclareLaunchArgument(
@@ -61,7 +67,8 @@ def generate_launch_description():
         ],
         remappings=[
             ("image_raw", "hand_controller/image_annotated")
-        ]
+        ],
+        condition=IfCondition(PythonExpression(['"', LaunchConfiguration('use_imshow'), '" == "True"']))
     )
 
     # Launch rviz

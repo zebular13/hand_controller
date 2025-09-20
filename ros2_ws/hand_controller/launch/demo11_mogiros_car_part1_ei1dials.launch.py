@@ -1,5 +1,6 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
+from launch.conditions import IfCondition, UnlessCondition
 from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 
@@ -24,6 +25,11 @@ def generate_launch_description():
             "use_imshow",
             default_value="False",
             description="Enable OpenCV display."
+        ),
+        DeclareLaunchArgument(
+            "use_flask",
+            default_value="False",
+            description="Enable Flask Server."
         ),
         DeclareLaunchArgument(
             "x_t",
@@ -65,6 +71,14 @@ def generate_launch_description():
             executable='usbcam_publisher_node',
             name="usbcam_publisher",
             remappings=[("image_raw", "usbcam_image")]            
+        ),
+        Node(
+            package='hand_controller',
+            executable='usbcam_subscriber_flask_node',
+            remappings=[
+                ("image_raw", "hand_controller/image_annotated")
+            ],
+            condition=IfCondition(PythonExpression(['"', LaunchConfiguration('use_flask'), '" == "True"']))
         ),
         Node(
             package='hand_controller',
