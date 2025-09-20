@@ -168,6 +168,29 @@ class HandControllerMp1DialsTwistNode(Node):
         self.use_imshow = self.get_parameter('use_imshow').value          
         self.get_logger().info('Use imshow : "%s"' % self.use_imshow)
 
+        # twist linear.x control
+        self.declare_parameter("x_t",  0.0)
+        self.declare_parameter("x_a",  0.0)
+        self.declare_parameter("x_b", 10.0)
+        self.x_t = self.get_parameter('x_t').value
+        self.x_a = self.get_parameter('x_a').value
+        self.x_b = self.get_parameter('x_b').value
+        self.get_logger().info(f'Twist linear.x controls : t={self.x_t}, a={self.x_a}, b={self.x_b}' )
+
+        # twist angular.z control
+        self.declare_parameter("z_t",  0.0)
+        self.declare_parameter("z_a",  0.0)
+        self.declare_parameter("z_b", 10.0)
+        self.z_t = self.get_parameter('z_t').value
+        self.z_a = self.get_parameter('z_a').value
+        self.z_b = self.get_parameter('z_b').value
+        self.get_logger().info(f'Twist angular.z controls : t={self.z_t}, a={self.z_a}, b={self.z_b}' )
+
+        # dials_single
+        self.declare_parameter("dials_single", True)
+        self.dials_single = self.get_parameter('dials_single').value          
+        self.get_logger().info('Dials Single mode : "%s"' % self.dials_single)
+        
         # Repo Path
         self.declare_parameter("repo_path", "/root/hand_controller")
         self.repo_path = self.get_parameter('repo_path').value
@@ -304,12 +327,38 @@ class HandControllerMp1DialsTwistNode(Node):
         
         # Create twist message, and publish
         msg = Twist()
-        msg.linear.x = delta_z[1] * 4.0
+        msg.linear.x = 0.0
         msg.linear.y = 0.0
         msg.linear.z = 0.0
         msg.angular.x = 0.0
         msg.angular.y = 0.0
-        msg.angular.z = delta_xy[0] * 4.0
+        msg.angular.z = 0.0
+
+        if self.dials_single:
+            # Take both controls from single (left) dial
+            linear_x_control = delta_xy[1]
+            angular_z_control = delta_xy[0]
+        else:
+            # Take controls from both dials
+            linear_x_control = delta_z[1]
+            angular_z_control = delta_xy[0]
+
+        # linear.x control
+        if linear_x_control > self.x_t:
+            # Advance
+            msg.linear.x = self.x_a + (linear_x_control * self.x_b)
+        elif linear_x_control < -self.x_t:
+            # Back-Up
+            msg.linear.x = -self.x_a + (linear_x_control * self.x_b)
+
+        # angular.z control
+        if angular_z_control > self.z_t:
+            # Turn Left
+            msg.angular.z = self.z_a + (angular_z_control * self.z_b)
+        elif angular_z_control < -self.z_t:
+            # Turn Right
+            msg.angular.z = -self.z_a + (angular_z_control * self.z_b)
+
         self.publisher2_.publish(msg)
         if self.verbose:
             self.get_logger().info(f"Published twist msg with linear.x={msg.linear.x:6.3f} angular.z={msg.angular.z:6.3f}")
