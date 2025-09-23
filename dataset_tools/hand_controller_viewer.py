@@ -163,7 +163,7 @@ while True:
     num = num + 1
     flag, frame = cap.read()
     if not flag:
-        print("[ERROR] cap.read() FAILEd !")
+        print("[ERROR] cap.read() FAILED !")
         break
 
     # Trackbar sliders
