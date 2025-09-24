@@ -1,0 +1,409 @@
+/* Tria Brand CSS - Based on Official Brand Guidelines */
+:root {
+    /* Primary Color Palette */
+    --tria-blue: #001F63;
+    --tria-pink: #FF00A3;
+    --tria-white: #FFFFFF;
+    
+    /* Secondary Color Palette (Cool Grays) */
+    --tria-cool-gray-11: #53565A;
+    --tria-cool-gray-7: #97999B;
+    --tria-cool-gray-3: #C8C9C7;
+    
+    /* Tertiary Color Palette */
+    --tria-purple: #6B539D;
+    --tria-aqua: #00A1BE;
+    --tria-yellow: #EBC950;
+    --tria-black: #000000;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, var(--tria-blue) 0%, #203a43 50%, #2c5364 100%);
+    --gradient-accent: linear-gradient(45deg, var(--tria-pink) 0%, var(--tria-blue) 100%);
+    --gradient-subtle: linear-gradient(135deg, var(--tria-cool-gray-3) 0%, var(--tria-white) 100%);
+    
+    /* Typography */
+    --font-display: 'Oswald', sans-serif;
+    --font-headline: 'Noto Sans', sans-serif;
+    --font-body: 'Noto Sans', sans-serif;
+}
+
+/* Base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-body);
+    background: var(--tria-blue);
+    color: var(--tria-white);
+    line-height: 1.6;
+    min-height: 100vh;
+    font-weight: 300;
+}
+
+/* Container */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header styles */
+header {
+    background: var(--gradient-accent);
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px 0;
+}
+
+header h1 {
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    font-weight: 300;
+    text-transform: uppercase;
+    color: var(--tria-white);
+    margin-bottom: 10px;
+    /*background: linear-gradient(45deg, var(--tria-aqua), var(--tria-pink)); */
+    background: var(--tria-cool-gray-3);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+header p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    color: var(--tria-white);
+}
+
+/* Main content area */
+main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+    align-items: start;
+}
+
+/* Video container */
+.video-container {
+    background: rgba(26, 26, 26, 0.8);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--tria-cool-gray-7);
+}
+
+.video-stream {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    background: var(--tria-black);
+    min-height: 400px;
+    display: block;
+}
+
+/* Info panel */
+.info-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.info-card {
+    background: rgba(26, 26, 26, 0.8);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--tria-cool-gray-7);
+}
+
+.info-card h3 {
+    color: var(--tria-aqua);
+    margin-bottom: 20px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-family: var(--font-headline);
+}
+
+/* Info grid */
+.info-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--tria-cool-gray-11);
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.label {
+    font-weight: 500;
+    color: var(--tria-cool-gray-3);
+}
+
+.value {
+    color: var(--tria-white);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9rem;
+}
+
+/* Endpoints */
+.endpoints {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.endpoint-link {
+    display: block;
+    padding: 12px 16px;
+    background: var(--gradient-accent);
+    color: var(--tria-white);
+    text-decoration: none;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-transform: uppercase;
+    font-family: var(--font-headline);
+}
+
+.endpoint-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 0, 163, 0.4);
+    text-decoration: none;
+    color: var(--tria-white);
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    margin-top: 40px;
+    padding: 20px 0;
+    color: var(--tria-white);
+    font-size: 0.9rem;
+    border-top: 1px solid var(--tria-cool-gray-11);
+}
+
+footer a {
+    color: var(--tria-white);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+/* Tria double bar graphic element */
+.tria-double-bar {
+    height: 4px;
+    background: linear-gradient(90deg, var(--tria-pink) 50%, var(--tria-blue) 50%);
+    margin: 20px 0;
+    width: 100%;
+}
+
+/* Headline with Tri-mark */
+.tri-mark-headline {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.tri-mark {
+    width: 0;
+    height: 0;
+    border-top: 12px solid transparent;
+    border-bottom: 12px solid transparent;
+    border-right: 20px solid var(--tria-pink);
+}
+
+.tri-mark-headline h2 {
+    font-family: var(--font-headline);
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--tria-white);
+    margin: 0;
+}
+
+/* Highlight bar */
+.highlight-bar {
+    padding: 10px 20px;
+    background: var(--tria-pink);
+    color: var(--tria-white);
+    font-family: var(--font-headline);
+    font-weight: 700;
+    text-transform: uppercase;
+    margin: 15px 0;
+    display: inline-block;
+}
+
+.highlight-bar.blue {
+    background: var(--tria-blue);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    main {
+        grid-template-columns: 1fr;
+    }
+    
+    .container {
+        padding: 15px;
+    }
+    
+    header h1 {
+        font-size: 2rem;
+    }
+    
+    .video-container {
+        padding: 15px;
+    }
+}
+
+/* Loading state */
+.video-stream:not([src]) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--tria-cool-gray-7);
+    font-style: italic;
+}
+
+.video-stream:not([src])::before {
+    content: "Loading stream...";
+}
+
+/* Animation for highlight bar */
+@keyframes highlightExpand {
+    0% {
+        width: 0;
+        opacity: 0;
+    }
+    100% {
+        width: 100%;
+        opacity: 1;
+    }
+}
+
+.highlight-bar {
+    animation: highlightExpand 0.5s ease-out;
+}
+
+/* Utility classes */
+.text-pink {
+    color: var(--tria-pink);
+}
+
+.text-blue {
+    color: var(--tria-blue);
+}
+
+.text-aqua {
+    color: var(--tria-aqua);
+}
+
+.bg-dark {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+/* Button styles */
+.btn-tria {
+    background: var(--gradient-accent);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-family: var(--font-headline);
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-tria:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 0, 163, 0.3);
+}
+
+.status-info {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+}
+
+.status-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.status-label {
+    font-weight: 600;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.status-value {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.status-value.active {
+    color: #4CAF50;
+}
+
+/* Responsive design 
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    header h1 {
+        font-size: 2rem;
+    }
+    
+    main {
+        padding: 20px;
+    }
+    
+    .status-info {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .video-container img {
+        max-height: 50vh;
+    }
+} */
+
+/* Loading animation */
+.video-container img[src=""], 
+.video-container img:not([src]) {
+    background: #f0f0f0;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+}
+
+.video-container img[src=""]::before,
+.video-container img:not([src])::before {
+    content: "Loading video stream...";
+}
