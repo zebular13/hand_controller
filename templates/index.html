@@ -9,8 +9,36 @@
 <body>
     <div>
         <header>
-            <h1>🤖 Hand Control</h1>
-            <p>Real-time hand detection using Edge Impulse FOMO model running on the Vision AI Kit 6490</p>
+            <div class="header-content">
+                <!-- Left Logo -->
+                <div class="logo-left">
+                    <img src="{{ url_for('static', filename='images/VisionAI-Kit_6490_RGB_on_Pink.png') }}" 
+                         alt="Vision AI Kit 6490" 
+                         class="logo-img">
+                </div>
+                
+                <!-- Center Text -->
+                <div class="header-center">
+                    <div class="header-text">
+                        <h1>Robot Car Hand Control</h1>
+                        <p>Edge Impulse FOMO model running on the Vision AI Kit 6490</p>
+                    </div>
+                </div>
+                
+                <!-- Right Logo -->
+                <div class="logo-right">
+                    <img src="{{ url_for('static', filename='images/TRIA-AAC-Tagline-Rev2-2C.png') }}" 
+                         alt="TRIA Advanced Automation" 
+                         class="logo-img">
+                </div>
+                
+                <!-- Background Pattern -->
+                <div class="header-background">
+                    <img src="{{ url_for('static', filename='images/TRIA_Small_triangle_pattern_tile_white_4c.png') }}" 
+                         alt="TRIA Pattern" 
+                         class="pattern-img">
+                </div>
+            </div>
         </header>
   
         <main class="container">
@@ -47,7 +75,7 @@
         </main>
         
         <footer>
-            <p>ROS2 Hand Controller System | Flask Stream Server</p>
+            <p>Powered by <a href="https://www.edgeimpulse.com/blog/fomo-self-attention/">Edge Impulse FOMO</a> | Running on <a href="https://www.tria-technologies.com/product/vision-ai-kit-6490/">Tria Vision AI Kit 6490</a></p>
         </footer>
     </div>
 

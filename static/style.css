@@ -80,8 +80,91 @@ header p {
     opacity: 0.9;
     color: var(--tria-white);
 }
+/* Additional styles for the header layout */
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    padding: 0 20px;
+}
 
-/* Main content area */
+.logo-left {
+    flex-shrink: 0;
+}
+
+.logo-right {
+    flex-shrink: 0;
+}
+
+.header-center {
+    flex: 1;
+    text-align: center;
+    padding: 0 40px;
+}
+
+.header-background {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    opacity: 0.1;
+    z-index: 1;
+}
+
+.header-text {
+    position: relative;
+    z-index: 2;
+}
+
+.logo-img {
+    max-height: 80px;
+    width: auto;
+}
+
+.pattern-img {
+    height: 100%;
+    width: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .logo-img {
+        max-height: 60px;
+    }
+    
+    .header-center {
+        padding: 0 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .header-center {
+        padding: 0;
+        order: 3;
+    }
+    
+    .logo-left, .logo-right {
+        order: 1;
+    }
+    
+    .header-background {
+        display: none; /* Hide pattern on mobile for simplicity */
+    }
+    
+    .logo-img {
+        max-height: 50px;
+    }
+
+}
+
+/* ---------------------Main content area------------------------ */
 main {
     flex: 1;
     display: grid;
