@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hand Controller - {{ hostname }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div>
+        <header>
+            <div class="header-content">
+                <!-- Left Logo -->
+                <div class="logo-left">
+                    <img src="{{ url_for('static', filename='images/VisionAI-Kit_6490_RGB_on_Pink.png') }}" 
+                         alt="Vision AI Kit 6490" 
+                         class="logo-img">
+                </div>
+                
+                <!-- Center Text -->
+                <div class="header-center">
+                    <div class="header-text">
+                        <h1>Hand-Controlled Robot Car</h1>
+                        <p>Edge Impulse FOMO model on the Vision AI Kit 6490</p>
+                    </div>
+                </div>
+                
+                <!-- Right Logo -->
+                <div class="logo-right">
+                    <img src="{{ url_for('static', filename='images/TRIA-AAC-Tagline-Rev2-2C.png') }}" 
+                         alt="TRIA Advanced Automation" 
+                         class="logo-img">
+                </div>
+                
+                <!-- Background Pattern -->
+                <div class="header-background">
+                    <img src="{{ url_for('static', filename='images/TRIA_Small_triangle_pattern_tile_white_4c.png') }}" 
+                         alt="TRIA Pattern" 
+                         class="pattern-img">
+                </div>
+            </div>
+        </header>
+        
+        <main class="container">
+            <div class="video-container">
+                <img src="{{ url_for('video_feed') }}" width="640" height="480">
+            </div>
+            
+            <div class="controls-container">
+                <div class="hand-control">
+                    <h2>Left Hand Control</h2>
+                    <div class="arrow-container" id="left-hand-container">
+                        <div class="arrow up-arrow" id="up-arrow">↑</div>
+                        <div class="arrow down-arrow" id="down-arrow">↓</div>
+                        <div class="arrow left-arrow" id="left-arrow">←</div>
+                        <div class="arrow right-arrow" id="right-arrow">→</div>
+                        <div class="hand-indicator" id="left-hand-indicator"></div>
+                    </div>
+                    <div class="data-display">
+                        Control X: <span id="lh-x">0.00</span> | 
+                        Control Y: <span id="lh-y">0.00</span><br>
+                        Screen X: <span id="lh-screen-x">0.50</span> |
+                        Screen Y: <span id="lh-screen-y">0.50</span><br>
+                        Status: <span id="lh-status" class="status status-inactive">INACTIVE</span>
+                    </div>
+                </div>
+                
+                <div class="hand-control">
+                    <h2>Right Hand Control</h2>
+                    <div class="arrow-container" id="right-hand-container">
+                        <div class="arrow up-arrow" id="rh-up-arrow">↑</div>
+                        <div class="arrow down-arrow" id="rh-down-arrow">↓</div>
+                        <div class="hand-indicator" id="right-hand-indicator"></div>
+                    </div>
+                    <div class="data-display">
+                        Control Z: <span id="rh-z">0.00</span><br>
+                        Screen X: <span id="rh-screen-x">0.50</span> |
+                        Screen Y: <span id="rh-screen-y">0.50</span><br>
+                        Status: <span id="rh-status" class="status status-inactive">INACTIVE</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function updateHandData() {
+            fetch('/hand_data')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Hand data:', data); // Debug logging
+                    
+                    // Update left hand display
+                    const lhX = data.left_hand.x_position;
+                    const lhY = data.left_hand.y_position;
+                    const lhScreenX = data.left_hand.screen_x;
+                    const lhScreenY = data.left_hand.screen_y;
+                    const lhActive = data.left_hand.active;
+                    
+                    document.getElementById('lh-x').textContent = lhX.toFixed(2);
+                    document.getElementById('lh-y').textContent = lhY.toFixed(2);
+                    document.getElementById('lh-screen-x').textContent = lhScreenX.toFixed(2);
+                    document.getElementById('lh-screen-y').textContent = lhScreenY.toFixed(2);
+                    
+                    const lhStatus = document.getElementById('lh-status');
+                    lhStatus.textContent = lhActive ? 'ACTIVE' : 'INACTIVE';
+                    lhStatus.className = lhActive ? 'status status-active' : 'status status-inactive';
+                    
+                    // Update right hand display
+                    const rhZ = data.right_hand.z_position;
+                    const rhScreenX = data.right_hand.screen_x;
+                    const rhScreenY = data.right_hand.screen_y;
+                    const rhActive = data.right_hand.active;
+                    
+                    document.getElementById('rh-z').textContent = rhZ.toFixed(2);
+                    document.getElementById('rh-screen-x').textContent = rhScreenX.toFixed(2);
+                    document.getElementById('rh-screen-y').textContent = rhScreenY.toFixed(2);
+                    
+                    const rhStatus = document.getElementById('rh-status');
+                    rhStatus.textContent = rhActive ? 'ACTIVE' : 'INACTIVE';
+                    rhStatus.className = rhActive ? 'status status-active' : 'status status-inactive';
+                    
+                    // Animate based on actual hand positions
+                    animateLeftHand(lhScreenX, lhScreenY, lhX, lhY, lhActive);
+                    animateRightHand(rhScreenX, rhScreenY, rhZ, rhActive);
+                })
+                .catch(error => console.error('Error fetching hand data:', error));
+        }
+        
+        function animateLeftHand(screenX, screenY, controlX, controlY, active) {
+            const container = document.getElementById('left-hand-container');
+            const indicator = document.getElementById('left-hand-indicator');
+            const arrows = {
+                up: document.getElementById('up-arrow'),
+                down: document.getElementById('down-arrow'),
+                left: document.getElementById('left-arrow'),
+                right: document.getElementById('right-arrow')
+            };
+            
+            // Move indicator based on actual screen position
+            const indicatorX = screenX * 200; // Container width
+            const indicatorY = screenY * 200; // Container height
+            
+            indicator.style.left = indicatorX + 'px';
+            indicator.style.top = indicatorY + 'px';
+            indicator.style.backgroundColor = active ? '#007bff' : '#ccc';
+            
+            // Highlight arrows based on control values
+            arrows.up.classList.toggle('active', active && controlY < -0.1);
+            arrows.down.classList.toggle('active', active && controlY > 0.1);
+            arrows.left.classList.toggle('active', active && controlX < -0.1);
+            arrows.right.classList.toggle('active', active && controlX > 0.1);
+        }
+        
+        function animateRightHand(screenX, screenY, controlZ, active) {
+            const container = document.getElementById('right-hand-container');
+            const indicator = document.getElementById('right-hand-indicator');
+            const arrows = {
+                up: document.getElementById('rh-up-arrow'),
+                down: document.getElementById('rh-down-arrow')
+            };
+            
+            // Move indicator based on actual screen position
+            const indicatorX = screenX * 200;
+            const indicatorY = screenY * 200;
+            
+            indicator.style.left = indicatorX + 'px';
+            indicator.style.top = indicatorY + 'px';
+            indicator.style.backgroundColor = active ? '#28a745' : '#ccc';
+            
+            // Highlight arrows based on control values
+            arrows.up.classList.toggle('active', active && controlZ < -0.1);
+            arrows.down.classList.toggle('active', active && controlZ > 0.1);
+        }
+        
+        // Update hand data every 100ms
+        setInterval(updateHandData, 100);
+        
+        // Initial update
+        updateHandData();
+    </script>
+</body>
+</html>

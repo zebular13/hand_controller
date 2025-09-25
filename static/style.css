@@ -1,0 +1,193 @@
+/* Tria Brand CSS - Based on Official Brand Guidelines */
+:root {
+    /* Primary Color Palette */
+    --tria-blue: #001F63;
+    --tria-pink: #FF00A3;
+    --tria-white: #FFFFFF;
+    
+    /* Secondary Color Palette (Cool Grays) */
+    --tria-cool-gray-11: #53565A;
+    --tria-cool-gray-7: #97999B;
+    --tria-cool-gray-3: #C8C9C7;
+    
+    /* Tertiary Color Palette */
+    --tria-purple: #6B539D;
+    --tria-aqua: #00A1BE;
+    --tria-yellow: #EBC950;
+    --tria-black: #000000;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, var(--tria-blue) 0%, #203a43 50%, #2c5364 100%);
+    --gradient-accent: linear-gradient(45deg, var(--tria-pink) 0%, var(--tria-blue) 100%);
+    --gradient-subtle: linear-gradient(135deg, var(--tria-cool-gray-3) 0%, var(--tria-white) 100%);
+    
+    /* Typography */
+    --font-display: 'Oswald', sans-serif;
+    --font-headline: 'Noto Sans', sans-serif;
+    --font-body: 'Noto Sans', sans-serif;
+}
+
+/* Base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-body);
+    background: var(--tria-blue);
+    color: var(--tria-white);
+    line-height: 1.6;
+    min-height: 100vh;
+    font-weight: 300;
+}
+
+/* Container */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header styles */
+header {
+    background: var(--gradient-accent);
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px 0;
+}
+
+header h1 {
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    font-weight: 300;
+    text-transform: uppercase;
+    color: var(--tria-white);
+    margin-bottom: 10px;
+    /*background: linear-gradient(45deg, var(--tria-aqua), var(--tria-pink)); */
+    background: var(--tria-cool-gray-3);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+header p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    color: var(--tria-white);
+}
+/* Additional styles for the header layout */
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    padding: 0 20px;
+}
+
+.logo-left {
+    flex-shrink: 0;
+}
+
+.logo-right {
+    flex-shrink: 0;
+}
+
+.header-center {
+    flex: 1;
+    text-align: center;
+    padding: 0 40px;
+}
+
+.header-background {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    opacity: 0.1;
+    z-index: 1;
+}
+
+.header-text {
+    position: relative;
+    z-index: 2;
+}
+
+.logo-img {
+    max-height: 80px;
+    width: auto;
+}
+
+.pattern-img {
+    height: 100%;
+    width: auto;
+}
+.video-container {
+    text-align: center;
+    margin-bottom: 30px;
+}
+.controls-container {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 30px;
+}
+.hand-control {
+    text-align: center;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    width: 30%;
+}
+.arrow-container {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    margin: 10px auto;
+    background: #f8f8f8;
+    border-radius: 50%;
+    border: 2px solid #ddd;
+}
+.arrow {
+    position: absolute;
+    font-size: 30px;
+    transition: all 0.2s ease;
+    opacity: 0.3;
+}
+.arrow.active {
+    opacity: 1;
+    font-size: 40px;
+    color: #007bff;
+}
+.left-arrow { left: 10px; top: 50%; transform: translateY(-50%); }
+.right-arrow { right: 10px; top: 50%; transform: translateY(-50%); }
+.up-arrow { top: 10px; left: 50%; transform: translateX(-50%); }
+.down-arrow { bottom: 10px; left: 50%; transform: translateX(-50%); }
+.hand-indicator {
+    width: 20px;
+    height: 20px;
+    background: red;
+    border-radius: 50%;
+    position: absolute;
+    transition: all 0.2s ease;
+    transform: translate(-50%, -50%);
+}
+.data-display {
+    background: #333;
+    color: #0f0;
+    padding: 10px;
+    border-radius: 5px;
+    font-family: monospace;
+    margin-top: 10px;
+}
+.status {
+    padding: 5px 10px;
+    border-radius: 3px;
+    font-weight: bold;
+}
+.status-active { background: #4CAF50; color: white; }
+.status-inactive { background: #f44336; color: white; }
