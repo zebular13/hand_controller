@@ -375,10 +375,73 @@ with ImageImpulseRunner(modelfile) as runner:
 
       print('[INFO] Loaded runner for "' + model_info['project']['owner'] + ' / ' + model_info['project']['name'] + '"')
       
+      print('[INFO] model_info = ',model_info)
+      # [INFO-FOMO160] model_info =  
+      #        {
+      #           'features_shm': 
+      #            {
+      #               'elements': 25600, 'name': '/shm-7d82b60c69d6', 'size_bytes': 102400, 'type': 'float32'
+      #            }, 
+      #           'inferencing_engine': 
+      #            {
+      #               'engine_type': 4, 'properties': []
+      #            }, 
+      #           'model_parameters': 
+      #            {
+      #               'axis_count': 1, 'frequency': 0, 
+      #               'has_anomaly': 0, 'has_object_tracking': False, 'has_performance_calibration': False, 
+      #               'image_channel_count': 3, 'image_input_frames': 1, 'image_input_height': 160, 'image_input_width': 160, 
+      #               'image_resize_mode': 'fit-shortest', 
+      #               'inferencing_engine': 4, 'input_features_count': 25600, 'interval_ms': 1, 
+      #               'label_count': 3, 'labels': ['closed', 'face', 'open'], 
+      #               'model_type': 'constrained_object_detection', 'sensor': 3, 'slice_size': 6400, 
+      #               'thresholds': [{'id': 14, 'min_score': 0.5, 'type': 'object_detection'}], 
+      #               'use_continuous_mode': False
+      #            },
+      #           'project': 
+      #            {
+      #               'deploy_version': 38, 'id': 731536, 'impulse_id': 3, 'impulse_name': 'fomo 160', 'name': 'hands v2', 'owner': 'Tria Technologies'
+      #            }
+      #        }
+      #
+      # [INFO-YOLOv5 ] model_info =
+      #        {
+      #           'features_shm': 
+      #            {
+      #               'elements': 50176, 'name': '/shm-75cac43636aa', 'size_bytes': 200704, 'type': 'float32'
+      #            },
+      #           'inferencing_engine': 
+      #            {
+      #               'engine_type': 4, 'properties': []
+      #            }, 
+      #           'model_parameters': 
+      #            {
+      #               'axis_count': 1, 'frequency': 0, 
+      #               'has_anomaly': 0, 'has_object_tracking': False, 'has_performance_calibration': False,
+      #               'image_channel_count': 3, 'image_input_frames': 1, 'image_input_height': 224, 'image_input_width': 224,
+      #               'image_resize_mode': 'fit-shortest', 
+      #               'inferencing_engine': 4, 'input_features_count': 50176, 'interval_ms': 1, 
+      #               'label_count': 3, 'labels': ['closed', 'face', 'open'], 
+      #               'model_type': 'object_detection', 'sensor': 3, 'slice_size': 12544, 
+      #               'thresholds': [{'id': 24, 'min_score': 0.5, 'type': 'object_detection'}], 
+      #               'use_continuous_mode': False
+      #            }, 
+      #           'project': 
+      #            {
+      #               'deploy_version': 39, 'id': 731536, 'impulse_id': 6, 'impulse_name': 'yolov5', 'name': 'hands v2', 'owner': 'Tria Technologies'
+      #            }
+      #        }
+      
   labels = model_info['model_parameters']['labels'] 
   if bVerbose:
       print("[INFO] labels = ",labels)
  
+  model_input_width = model_info['model_parameters']['image_input_width']
+  model_input_height = model_info['model_parameters']['image_input_height']
+  if bVerbose:
+      print("[INFO] model input = ",model_input_width,"x",model_input_height)
+  
+  
   while True:
   
     # init the real-time FPS counter
@@ -446,7 +509,7 @@ with ImageImpulseRunner(modelfile) as runner:
     start = timer()
     image = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
     image_size = max(CAMERA_WIDTH,CAMERA_HEIGHT)    
-    cropped_size = 160    
+    cropped_size = model_input_width    
     img1,scale1,pad1=resize_pad(image,cropped_size,cropped_size)
     #print(f"[INFO] scale1={scale1} pad1={pad1}")
     # [INFO] scale1=4.0 pad1=(80, 0)
