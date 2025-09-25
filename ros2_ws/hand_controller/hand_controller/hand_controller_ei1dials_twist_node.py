@@ -266,6 +266,11 @@ class HandControllerEi1DialsTwistNode(Node):
         if self.verbose:
             self.get_logger().info('Labels = %s' %  self.labels )
 
+        self.model_input_width = self.model_info['model_parameters']['image_input_width']
+        self.model_input_height = self.model_info['model_parameters']['image_input_height']
+        if self.verbose:
+            self.get_logger().info('Model Input Size = %d x %d' %  self.model_input_width, self.model_input_height )
+
         # Visual Control Dials
 
         # Additional Settings (for text overlay)
@@ -310,7 +315,7 @@ class HandControllerEi1DialsTwistNode(Node):
         #image = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
         CAMERA_HEIGHT, CAMERA_WIDTH, _ = image.shape
         image_size = max(CAMERA_WIDTH,CAMERA_HEIGHT)
-        cropped_size = 160    
+        cropped_size = self.model_input_width    
         img1,scale1,pad1=resize_pad(image,cropped_size,cropped_size)
 
         # generate features

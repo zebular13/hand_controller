@@ -344,6 +344,13 @@ with ImageImpulseRunner(modelfile) as runner:
   if bVerbose:
       print("[INFO] labels = ",labels)
  
+ 
+  model_input_width = model_info['model_parameters']['image_input_width']
+  model_input_height = model_info['model_parameters']['image_input_height']
+  if bVerbose:
+      print("[INFO] model input = ",model_input_width,"x",model_input_height)
+  
+  
   while True:
   
     # init the real-time FPS counter
@@ -427,8 +434,8 @@ with ImageImpulseRunner(modelfile) as runner:
     # blank out overlapping portions
     image_l[:,(image_size-image_overlap-1):-1,:] = 0
     image_r[:,0:(image_overlap),:] = 0
-    # resize to FOMO input size
-    cropped_size = 160
+    # resize to MODEL input size
+    cropped_size = model_input_width
     image_l = cv2.resize(image_l,(cropped_size,cropped_size))
     image_r = cv2.resize(image_r,(cropped_size,cropped_size))    
     #print("[INFO] image_l.shape = ",image_l.shape )
@@ -487,8 +494,8 @@ with ImageImpulseRunner(modelfile) as runner:
                 x1 = (bb['x'] / cropped_size) * image_size
                 y1 = (bb['y'] / cropped_size) * image_size
                 z1 = 0.0
-                x2 = ((bb['x'] + bb['width']) / 160) * image_size
-                y2 = ((bb['y'] + bb['height']) / 160) * image_size
+                x2 = ((bb['x'] + bb['width']) / cropped_size) * image_size
+                y2 = ((bb['y'] + bb['height']) / cropped_size) * image_size
                 z2 = 0.0
                 landmarks = np.asarray([[x1,y1,z1],[x2,y2,z2]])
                 lh_data = HandData(handedness, landmarks, CAMERA_WIDTH, CAMERA_HEIGHT)
