@@ -175,17 +175,20 @@
                 down: document.getElementById('rh-down-arrow')
             };
             
-            // Move indicator based on actual screen position
-            const indicatorX = screenX * 100;
-            const indicatorY = screenY * 100;
+            let indicatorX = (1 - screenX) * 100; // Invert X if needed
+            let indicatorY = (1 - screenY) * 100; // Invert Y if needed
+            
+            // Constrain within container bounds but allow full movement
+            indicatorX = Math.max(5, Math.min(95, indicatorX));  // 5px padding from edges
+            indicatorY = Math.max(5, Math.min(95, indicatorY));  // 5px padding from edges
             
             indicator.style.left = indicatorX + 'px';
             indicator.style.top = indicatorY + 'px';
             indicator.style.backgroundColor = active ? '#28a745' : '#ccc';
             
             // Highlight arrows based on control values
-            arrows.up.classList.toggle('active', active && controlZ < -0.1);
-            arrows.down.classList.toggle('active', active && controlZ > 0.1);
+            arrows.up.classList.toggle('active', active && controlZ > 0.1);
+            arrows.down.classList.toggle('active', active && controlZ < -0.1);
         }
         
         // Update hand data every 100ms
