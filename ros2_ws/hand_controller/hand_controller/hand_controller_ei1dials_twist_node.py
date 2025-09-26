@@ -269,7 +269,7 @@ class HandControllerEi1DialsTwistNode(Node):
         self.model_input_width = self.model_info['model_parameters']['image_input_width']
         self.model_input_height = self.model_info['model_parameters']['image_input_height']
         if self.verbose:
-            self.get_logger().info('Model Input Size = %d x %d' %  self.model_input_width, self.model_input_height )
+            self.get_logger().info('Model Input Size = %d x %d' %  (self.model_input_width, self.model_input_height) )
 
         # Visual Control Dials
 
