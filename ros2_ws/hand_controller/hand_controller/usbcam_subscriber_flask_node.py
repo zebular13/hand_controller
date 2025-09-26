@@ -128,8 +128,8 @@ class UsbCamSubscriberFlaskNode(Node):
             self.message_count += 1
             
             # Extract control data from twist message
-            linear_x = twist_msg.linear.x
-            angular_z = twist_msg.angular.z
+            linear_x = twist_msg.linear.x    # Forward/Backward (Right hand)
+            angular_z = twist_msg.angular.z  # Left/Right turning (Left hand)
             
             # Log first few messages for debugging
             if self.message_count <= 10:
@@ -137,31 +137,37 @@ class UsbCamSubscriberFlaskNode(Node):
             elif self.message_count == 11:
                 self.get_logger().info('... continuing to receive messages (suppressing logs)')
             
-            # Calculate normalized values
-            normalized_linear = max(min(linear_x / 2.0, 1.0), -1.0) if abs(linear_x) > 0.1 else 0.0
+            # Calculate normalized values - SEPARATE CONTROLS
+            # Left hand: only angular_z (turning)
             normalized_angular = max(min(angular_z / 2.0, 1.0), -1.0) if abs(angular_z) > 0.1 else 0.0
             
-            # Determine hand activity based on control values
-            left_hand_active = abs(normalized_angular) > 0.1 or abs(normalized_linear) > 0.1
-            right_hand_active = abs(normalized_linear) > 0.1
+            # Right hand: only linear_x (forward/backward)
+            normalized_linear = max(min(linear_x / 2.0, 1.0), -1.0) if abs(linear_x) > 0.1 else 0.0
             
-            # Calculate visual positions based on control values
+            # Determine hand activity based on SEPARATE controls
+            left_hand_active = abs(normalized_angular) > 0.1  # Only angular movement
+            right_hand_active = abs(normalized_linear) > 0.1  # Only linear movement
+            
+            # Calculate visual positions based on SEPARATE controls
+            # Left hand: only moves left/right based on angular control
             lh_screen_x = 0.5 + (normalized_angular * 0.4)  # Map to 0.1-0.9 range
-            lh_screen_y = 0.5 + (normalized_linear * 0.4)
-            rh_screen_x = 0.5
-            rh_screen_y = 0.5 + (normalized_linear * 0.4)
+            lh_screen_y = 0.5  # Fixed vertical position - doesn't move up/down
+            
+            # Right hand: only moves up/down based on linear control  
+            rh_screen_x = 0.5  # Fixed horizontal position - doesn't move left/right
+            rh_screen_y = 0.5 + (normalized_linear * 0.4)   # Map to 0.1-0.9 range
             
             hand_data = {
                 'left_hand': {
-                    'x_position': normalized_angular,
-                    'y_position': normalized_linear,
+                    'x_position': normalized_angular,  # Turning control
+                    'y_position': 0.0,                 # No vertical movement for left hand
                     'screen_x': max(min(lh_screen_x, 0.9), 0.1),
-                    'screen_y': max(min(lh_screen_y, 0.9), 0.1),
+                    'screen_y': max(min(lh_screen_y, 0.9), 0.1),  # Fixed at 0.5
                     'active': left_hand_active
                 },
                 'right_hand': {
-                    'z_position': normalized_linear,
-                    'screen_x': max(min(rh_screen_x, 0.9), 0.1),
+                    'z_position': normalized_linear,   # Forward/backward control
+                    'screen_x': max(min(rh_screen_x, 0.9), 0.1),  # Fixed at 0.5
                     'screen_y': max(min(rh_screen_y, 0.9), 0.1),
                     'active': right_hand_active
                 },
