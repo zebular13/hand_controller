@@ -120,8 +120,8 @@ header p {
 /*-------------------Main Content Styles-------------------*/
 /* Container */
 .container {
-    max-width: 1200px;
-    margin: 0 auto;
+    width: 33%;
+    max-width:800px;
 }
 .video-container {
     text-align: center;
@@ -141,7 +141,7 @@ header p {
     min-height: 400px;
 }
 .controls-container {
-    width: 640px;
+    width: 700px;
     margin: 0 auto 30px auto;
     display: flex;
     justify-content: space-between; /* Changed from space-around for better spacing */
@@ -185,7 +185,7 @@ header p {
 .right-arrow { right: 5px; top: 50%; transform: translateY(-50%); }
 
 /* Curved arrows for turning */
-.curve-left { left: 15px; top: 50%; transform: translateY(-50%) rotate(180deg); }
+.curve-left { left: 15px; top: 50%; transform: translateY(-50%); }
 .curve-right { right: 15px; top: 50%; transform: translateY(-50%); }
 
 /* Up/Down arrows for forward/backward */
@@ -238,7 +238,7 @@ header p {
 /* Direction labels */
 .direction-label {
     position: absolute;
-    font-size: 10px;
+    font-size: 16px;
     color: #666;
     font-weight: bold;
 }
