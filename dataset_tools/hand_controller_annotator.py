@@ -175,6 +175,8 @@ ap.add_argument('-n', '--name'       , type=str, default="hand_controller_annota
 ap.add_argument('-v', '--verbose'    , default=False, action='store_true', help="Enable Verbose mode. Default is off")
 ap.add_argument('-w', '--withoutview', default=False, action='store_true', help="Disable Output viewing. Default is on")
 ap.add_argument('-f', '--fps'        , default=False, action='store_true', help="Enable FPS display. Default is off")
+ap.add_argument('-s', '--skip_frames', default=0, help="Number of frames to skip for processing.")
+ap.add_argument('-m', '--max_frames' , default=100, help="Maximum number of frames to process.")
 
 args = ap.parse_args()  
   
@@ -186,6 +188,8 @@ print(' --type        : ', args.type)
 print(' --verbose     : ', args.verbose)
 print(' --withoutview : ', args.withoutview)
 print(' --fps         : ', args.fps)
+print(' --skip_frames : ', args.skip_frames)
+print(' --max_frames  : ', args.max_frames)
 
 bInputVideo = True
 
@@ -236,6 +240,11 @@ prev_frame_num = 0
 frame_num = 0
 num = 0
 num_images = int(frame_count)
+
+skip_frames = int(args.skip_frames)
+max_frames  = int(args.max_frames)
+print("[INFO]    Skip Frames   : ",skip_frames)
+print("[INFO]    Max Frames    : ",max_frames)
 
 def ignore(x):
     pass
@@ -321,15 +330,19 @@ while True:
         rt_fps_time = cv2.getTickCount()
 
     cap.set(cv2.CAP_PROP_POS_FRAMES, num)
-    num = num + 1
+    num = num + (skip_frames+1)
+    #print("[INFO] Frame Num : ",num)
     flag, frame = cap.read()
     if not flag:
         print("[ERROR] cap.read() FAILED !")
         break
 
     # Trackbar sliders
-    frame_num = cv2.getTrackbarPos('frameNum', app_ctrl_title)      
+    frame_num = cv2.getTrackbarPos('frameNum', app_ctrl_title)
     if prev_frame_num != frame_num:
+        frame_cnt = int(round(float(frame_num)/(skip_frames+1)))
+        frame_num = frame_cnt * (skip_frames+1)
+        print("[INFO] Frame Slider : ",frame_num)
         prev_frame_num = frame_num
         num = frame_num
 
@@ -337,7 +350,6 @@ while True:
     if bMirrorImage == True:
         # Mirror horizontally for selfie-mode
         frame = cv2.flip(frame, 1)        
-
 
     #image = cv2.resize(frame,(0,0), fx=scale, fy=scale) 
     #image = frame
@@ -536,7 +548,7 @@ while True:
         key = cv2.waitKey(0)
     elif bPause == True:
         key = cv2.waitKey(33)
-        num = num - 1
+        num = num - (skip_frames+1)
     else:
         key = cv2.waitKey(33)
 
@@ -566,6 +578,14 @@ while True:
 
     if key == 27 or key == 113: # ESC or 'q':
         break
+
+    frame_cnt = int(round(float(num)/(skip_frames+1)))
+
+    #print("[INFO] Frame Qty : ",frame_cnt, max_frames)
+    if frame_cnt >= max_frames:
+        print("[INFO] Max Frames reached ... quitting")
+        break
+        
 
     # Update the real-time FPS counter
     rt_fps_count = rt_fps_count + 1
