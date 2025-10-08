@@ -78,6 +78,12 @@ def generate_launch_description():
             remappings=[
                 ("image_raw", "hand_controller/image_annotated")
             ],
+            parameters=[{
+                "model": LaunchConfiguration("model"),
+                "verbose": LaunchConfiguration("verbose"),
+                "use_imshow": LaunchConfiguration("use_imshow"),
+                # Add any other parameters you need
+            }],
             condition=IfCondition(PythonExpression(['"', LaunchConfiguration('use_flask'), '" == "True"']))
         ),
         Node(
