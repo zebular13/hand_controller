@@ -504,7 +504,7 @@ while True:
                 profile_annotate += timer()-start
                         
                 start = timer()
-                pointst = torch.tensor([points_norm]).float().to(device)
+                pointst = torch.tensor(np.array([points_norm])).float().to(device)
                 label = model(pointst)
                 label = label.detach().cpu().numpy()
                 profile_asl_model += timer()-start

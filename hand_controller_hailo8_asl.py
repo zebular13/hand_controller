@@ -213,13 +213,12 @@ landmark_type = "blazehandlandmark"
 
 model1 = "blaze_app_python/blaze_hailo/models/palm_detection_lite.hef"
 blaze_detector = BlazeDetector_hailo(detector_type,hailo_infer)
-blaze_detector.set_debug(debug=args.debug)
-blaze_detector.display_scores(debug=False)
+blaze_detector.set_debug(debug=args.verbose)
 blaze_detector.load_model(model1)
  
 model2 = "blaze_app_python/blaze_hailo/models/hand_landmark_lite.hef"
 blaze_landmark = BlazeLandmark_hailo(landmark_type,hailo_infer)
-blaze_landmark.set_debug(debug=args.debug)
+blaze_landmark.set_debug(debug=args.verbose)
 blaze_landmark.load_model(model2)
 
 thresh_min_score = blaze_detector.min_score_thresh
@@ -510,7 +509,7 @@ while True:
                 profile_annotate += timer()-start
                         
                 start = timer()
-                pointst = torch.tensor([points_norm]).float().to(device)
+                pointst = torch.tensor(np.array([points_norm])).float().to(device)
                 label = model(pointst)
                 label = label.detach().cpu().numpy()
                 profile_asl_model += timer()-start

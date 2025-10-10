@@ -212,15 +212,14 @@ landmark_type = "blazehandlandmark"
 #blaze_detector = BlazeDetector_tflite(detector_type)
 model1 = "blaze_app_python/blaze_pytorch/models/blazepalm.pth"
 blaze_detector = BlazeDetector_pytorch(detector_type)
-blaze_detector.set_debug(debug=args.debug)
-blaze_detector.display_scores(debug=False)
+blaze_detector.set_debug(debug=args.verbose)
 blaze_detector.load_model(model1)
  
 #model2 = "blaze_app_python/blaze_tflite/models/hand_landmark_lite.tflite"
 #blaze_landmark = BlazeLandmark_tflite(landmark_type)
 model2 = "blaze_app_python/blaze_pytorch/models/blazehand_landmark.pth"
 blaze_landmark = BlazeLandmark_pytorch(landmark_type)
-blaze_landmark.set_debug(debug=args.debug)
+blaze_landmark.set_debug(debug=args.verbose)
 blaze_landmark.load_model(model2)
 
 thresh_min_score = blaze_detector.min_score_thresh
@@ -511,7 +510,7 @@ while True:
                 profile_annotate += timer()-start
                         
                 start = timer()
-                pointst = torch.tensor([points_norm]).float().to(device)
+                pointst = torch.tensor(np.array([points_norm])).float().to(device)
                 label = model(pointst)
                 label = label.detach().cpu().numpy()
                 profile_asl_model += timer()-start
