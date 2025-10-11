@@ -15,13 +15,11 @@ limitations under the License.
 #
 # References:
 #   https://www.github.com/AlbertaBeef/blaze_app_python
-#   https://www.github.com/AlbertaBeef/asl_mediapipe_pointnet
+#   https://www.github.com/AlbertaBeef/hand_controller
 #
 # Dependencies:
-#   TFLite
-#      tensorflow
-#    or
-#      tflite_runtime
+#   Hailo
+#      hailo_platform
 #   PyTorch
 #      torch
 #

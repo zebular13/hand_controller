@@ -18,15 +18,14 @@ limitations under the License.
 #   https://www.github.com/AlbertaBeef/hand_controller
 #
 # Dependencies:
-#   TFLite
-#      tensorflow
-#    or
-#      tflite_runtime
-#   PyTorch
-#      torch
+#   Model conversion to ONNX
+#      tf2onnx
+#      onnxsim
+#   Inference with ONNX
+#      onnxruntime
 #
 
-app_name = "hand_controller_pytorch_asl"
+app_name = "hand_controller_onnx_asl"
 
 import numpy as np
 import cv2
@@ -56,14 +55,17 @@ print("[INFO] user@hosthame : ",user_host_descriptor)
 sys.path.append(os.path.abspath('blaze_app_python/'))
 sys.path.append(os.path.abspath('blaze_app_python/blaze_common/'))
 #sys.path.append(os.path.abspath('blaze_app_python/blaze_tflite/'))
-sys.path.append(os.path.abspath('blaze_app_python/blaze_pytorch/'))
+#sys.path.append(os.path.abspath('blaze_app_python/blaze_pytorch/'))
+sys.path.append(os.path.abspath('blaze_app_python/blaze_onnx/'))
 #sys.path.append(os.path.abspath('blaze_app_python/blaze_vitisai/'))
 #sys.path.append(os.path.abspath('blaze_app_python/blaze_hailo/'))
 
 #from blaze_tflite.blazedetector import BlazeDetector as BlazeDetector_tflite
 #from blaze_tflite.blazelandmark import BlazeLandmark as BlazeLandmark_tflite
-from blaze_pytorch.blazedetector import BlazeDetector as BlazeDetector_pytorch
-from blaze_pytorch.blazelandmark import BlazeLandmark as BlazeLandmark_pytorch
+#from blaze_pytorch.blazedetector import BlazeDetector as BlazeDetector_pytorch
+#from blaze_pytorch.blazelandmark import BlazeLandmark as BlazeLandmark_pytorch
+from blaze_onnx.blazedetector import BlazeDetector as BlazeDetector_onnx
+from blaze_onnx.blazelandmark import BlazeLandmark as BlazeLandmark_onnx
 
 from visualization import draw_detections, draw_landmarks, draw_roi
 from visualization import HAND_CONNECTIONS, FACE_CONNECTIONS, POSE_FULL_BODY_CONNECTIONS, POSE_UPPER_BODY_CONNECTIONS
@@ -74,15 +76,25 @@ from utils_linux import get_media_dev_by_name, get_video_dev_by_name
 
 from timeit import default_timer as timer
 
-import torch
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-sys.path.append('./asl_pointnet')
-from point_net import PointNet
+import onnxruntime
 
 model_path = './asl_pointnet'
-model_name = 'point_net_1.pth'
-model = torch.load(os.path.join(model_path, model_name),weights_only=False,map_location=device)            
+model_name = 'asl_pointnet.onnx'
+session = onnxruntime.InferenceSession(os.path.join(model_path, model_name))        
+
+# reading onnx model parameters
+session_inputs = session.get_inputs()
+session_outputs = session.get_outputs()
+num_inputs = len(session_inputs)
+num_outputs = len(session_outputs)
+if True:
+   print("[BlazeDetector.load_model] Number of Inputs : ",num_inputs)
+   for i in range(num_inputs):
+       print("[BlazeDetector.load_model] Input[",i,"] Shape : ",session_inputs[i].shape," (",session_inputs[i].name,")")
+   print("[BlazeDetector.load_model] Number of Outputs : ",num_outputs)
+   for i in range(num_outputs):
+       print("[BlazeDetector.load_model] Output[",i,"] Shape : ",session_outputs[i].shape," (",session_outputs[i].name,")")
+
 
 char2int = {
             "A":0, "B":1, "C":2, "D":3, "E":4, "F":5, "G":6, "H":7, "I":8, "K":9, "L":10, "M":11,
@@ -210,15 +222,19 @@ landmark_type = "blazehandlandmark"
 
 #model1 = "blaze_app_python/blaze_tflite/models/palm_detection_lite.tflite"
 #blaze_detector = BlazeDetector_tflite(detector_type)
-model1 = "blaze_app_python/blaze_pytorch/models/blazepalm.pth"
-blaze_detector = BlazeDetector_pytorch(detector_type)
+#model1 = "blaze_app_python/blaze_pytorch/models/blazepalm.pth"
+#blaze_detector = BlazeDetector_pytorch(detector_type)
+model1 = "blaze_app_python/blaze_onnx/models/palm_detection_lite.onnx"
+blaze_detector = BlazeDetector_onnx(detector_type)
 blaze_detector.set_debug(debug=args.verbose)
 blaze_detector.load_model(model1)
  
 #model2 = "blaze_app_python/blaze_tflite/models/hand_landmark_lite.tflite"
 #blaze_landmark = BlazeLandmark_tflite(landmark_type)
-model2 = "blaze_app_python/blaze_pytorch/models/blazehand_landmark.pth"
-blaze_landmark = BlazeLandmark_pytorch(landmark_type)
+#model2 = "blaze_app_python/blaze_pytorch/models/blazehand_landmark.pth"
+#blaze_landmark = BlazeLandmark_pytorch(landmark_type)
+model2 = "blaze_app_python/blaze_onnx/models/hand_landmark_lite.onnx"
+blaze_landmark = BlazeLandmark_onnx(landmark_type)
 blaze_landmark.set_debug(debug=args.verbose)
 blaze_landmark.load_model(model2)
 
@@ -232,7 +248,7 @@ thresh_confidence = 0.5
 thresh_confidence_prev = thresh_confidence
 
 print("================================================================")
-print("Hand Controller (Pytorch) with ASL (PyTorch)")
+print("Hand Controller (ONNX) with ASL (PyTorch)")
 print("================================================================")
 print("\tPress ESC to quit ...")
 print("----------------------------------------------------------------")
@@ -510,9 +526,14 @@ while True:
                 profile_annotate += timer()-start
                         
                 start = timer()
-                pointst = torch.tensor(np.array([points_norm])).float().to(device)
-                label = model(pointst)
-                label = label.detach().cpu().numpy()
+                input_name = session_inputs[0].name
+                x = np.array([points_norm])
+                #print("[INFO] input_name = ",input_name)
+                #print("[INFO] x.shape = ",x.shape)
+                output_names = [session_outputs[0].name]
+                #print("[INFO] output_names = ",output_names)
+                result = session.run(output_names, {input_name: x})   
+                label = result[0]
                 profile_asl_model += timer()-start
 
                 start = timer()
